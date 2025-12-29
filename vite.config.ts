@@ -17,9 +17,68 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
+import {
+  copyFileSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+  rmSync,
+} from 'fs';
+
+// Plugin to copy static assets and fix HTML paths after build
+function copyStaticAssets() {
+  return {
+    name: 'copy-static-assets',
+    closeBundle() {
+
+      // Copy manifest.json
+      copyFileSync(
+        resolve(__dirname, 'public/manifest.json'),
+        resolve(__dirname, 'dist/manifest.json')
+      );
+
+      // Copy icons
+      const iconsDir = resolve(__dirname, 'public/icons');
+      const distIconsDir = resolve(__dirname, 'dist/icons');
+      mkdirSync(distIconsDir, { recursive: true });
+
+      for (const file of readdirSync(iconsDir)) {
+        copyFileSync(
+          resolve(iconsDir, file),
+          resolve(distIconsDir, file)
+        );
+      }
+
+      // Move and fix devtools.html
+      let devtoolsHtml = readFileSync(
+        resolve(__dirname, 'dist/src/devtools/index.html'),
+        'utf-8'
+      );
+      // Fix paths from ../../ to ./
+      devtoolsHtml = devtoolsHtml.replace(/\.\.\/\.\.\//g, './');
+      writeFileSync(resolve(__dirname, 'dist/devtools.html'), devtoolsHtml);
+
+      // Move and fix panel.html
+      let panelHtml = readFileSync(
+        resolve(__dirname, 'dist/src/devtools/panel/index.html'),
+        'utf-8'
+      );
+      // Fix paths from ../../../ to ./
+      panelHtml = panelHtml.replace(/\.\.\/\.\.\/\.\.\//g, './');
+      writeFileSync(resolve(__dirname, 'dist/panel.html'), panelHtml);
+
+      // Remove the src directory
+      rmSync(resolve(__dirname, 'dist/src'), { recursive: true });
+
+      console.log('Copied and fixed static assets in dist/');
+    },
+  };
+}
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), copyStaticAssets()],
+  base: './',
   resolve: {
     alias: {
       '@shared': resolve(__dirname, 'src/shared'),
@@ -31,7 +90,7 @@ export default defineConfig({
       input: {
         background: resolve(__dirname, 'src/background/index.ts'),
         content: resolve(__dirname, 'src/content/index.ts'),
-        injected: resolve(__dirname, 'src/injected/index.ts'),
+        // injected is built separately with vite.config.injected.ts as IIFE
         devtools: resolve(__dirname, 'src/devtools/index.html'),
         panel: resolve(__dirname, 'src/devtools/panel/index.html'),
       },
@@ -43,6 +102,6 @@ export default defineConfig({
     },
     outDir: 'dist',
     emptyOutDir: true,
-    sourcemap: process.env.NODE_ENV === 'development',
+    sourcemap: true,
   },
 });

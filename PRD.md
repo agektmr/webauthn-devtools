@@ -122,9 +122,10 @@ Bit 7 (0x80): ED - Extension Data included
 ```
 
 **Display format:**
-- Show each flag with a visual indicator (checkmark/cross)
-- Group backup flags together as they indicate passkey sync status
-- Highlight UV flag status as it's critical for security decisions
+- Show flags in a **vertical list** with checkmark/circle icons
+- Each flag shows: icon (✓/○), abbreviation (UP, UV, etc.), and full name
+- True flags are highlighted in green, false flags are dimmed
+- Flags are displayed inline within the Response tab (not a separate tab)
 
 ### FR4: DevTools Panel
 
@@ -133,7 +134,7 @@ Bit 7 (0x80): ED - Extension Data included
 - Detail view showing full request/response data
 - Clear button to reset captured data
 - Filter/search functionality
-- Data is stored in memory only (cleared on page navigation or refresh)
+- Data is preserved across page navigations (only cleared manually or when tab is closed)
 
 ### FR7: Data Export
 
@@ -276,37 +277,42 @@ The content script must inject **before page scripts run** to wrap the WebAuthn 
 ├─────────────────────────────────────────────────────────┤
 │ Filter: [________________] [All ▼]                      │
 ├───────────────────────┬─────────────────────────────────┤
-│ ● create() 10:32:15   │ Request                         │
+│ ● create() 10:32:15   │ [Request] [Response]            │
 │   success 234ms       │ ─────────────────────────────── │
-│                       │ rp.id: example.com              │
-│ ○ get() 10:32:45      │ rp.name: Example Site           │
-│   pending...          │ user.name: alice@example.com    │
-│                       │ challenge: SGVsbG8gV29ybGQ...   │
-│                       │ pubKeyCredParams:               │
-│                       │   • ES256 (-7)                  │
-│                       │   • RS256 (-257)                │
-│                       │ authenticatorSelection:         │
-│                       │   residentKey: required         │
-│                       │   userVerification: preferred   │
-│                       │                                 │
-│                       │ Response                        │
-│                       │ ─────────────────────────────── │
-│                       │ id: abcd1234...                 │
-│                       │ type: public-key                │
-│                       │                                 │
-│                       │ Flags                           │
-│                       │ ┌─────────────────────────────┐ │
-│                       │ │ ✓ UP  User Present          │ │
-│                       │ │ ✓ UV  User Verified         │ │
-│                       │ │ ✓ BE  Backup Eligible       │ │
-│                       │ │ ✓ BS  Backed Up             │ │
-│                       │ │ ✓ AT  Credential Data       │ │
-│                       │ │ ✗ ED  Extensions            │ │
-│                       │ └─────────────────────────────┘ │
-│                       │                                 │
-│                       │ [View Full Response]            │
+│                       │ ATTESTATION CREDENTIAL          │
+│ ○ get() 10:32:45      │                                 │
+│   pending...          │ id: "abcd1234..."               │
+│                       │ rawId: "abcd1234..."            │
+│                       │ type: "public-key"              │
+│                       │ response:                       │
+│                       │   clientDataJSON: "eyJ0eXB..."  │
+│                       │   ┌─ CLIENTDATA (PARSED) ─────┐ │
+│                       │   │ type: "webauthn.create"   │ │
+│                       │   │ challenge: "SGVsbG8..."   │ │
+│                       │   │ origin: "https://..."     │ │
+│                       │   └───────────────────────────┘ │
+│                       │   attestationObject: "o2Nm..."  │
+│                       │   ┌─ ATTESTATION (PARSED) ────┐ │
+│                       │   │ fmt: "none"               │ │
+│                       │   │ authData:                 │ │
+│                       │   │   rpIdHash: "49960de..."  │ │
+│                       │   │   flags:                  │ │
+│                       │   │     ✓ UP (User Present)   │ │
+│                       │   │     ✓ UV (User Verified)  │ │
+│                       │   │     ✓ BE (Backup Elig.)   │ │
+│                       │   │     ✓ BS (Backup State)   │ │
+│                       │   │     ✓ AT (Cred. Data)     │ │
+│                       │   │     ○ ED (Extensions)     │ │
+│                       │   │   signCount: 0            │ │
+│                       │   └───────────────────────────┘ │
+│                       │ clientExtensionResults: {}      │
 └───────────────────────┴─────────────────────────────────┘
 ```
+
+**Key UI features:**
+- Two tabs: Request and Response (no separate Parsed tab)
+- Parsed data (clientData, attestation/authData) displayed inline as collapsible blocks
+- Flags displayed vertically within the parsed authData section
 
 ### Status Indicators
 

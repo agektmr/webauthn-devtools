@@ -38,8 +38,11 @@ DevTools Panel (React)
 npm install     # Install dependencies
 npm run dev     # Watch mode build
 npm run build   # Production build
-npm run test    # Run tests
+npm run test    # Run unit tests
+npx playwright test  # Run e2e tests
 ```
+
+**Note:** Sourcemaps are enabled for all builds to aid debugging.
 
 ## Loading the Extension
 
@@ -54,6 +57,13 @@ npm run test    # Run tests
 - Use functional components with hooks for React
 - Prefer explicit types over `any`
 - Use `base64url` encoding for all ArrayBuffer serialization
+
+## Steering documents
+
+Create a steering document everytime you are asked to work on a new task.
+The file should be stored as the following place.
+
+/.claude/steering/[YYYYMMDD]-[Task title]/
 
 ## License
 
@@ -110,7 +120,20 @@ Bit 7 (0x80): ED - Extension Data included
 2. Original WebAuthn API is called
 3. On completion, posts `CALL_SUCCESS` or `CALL_ERROR`
 4. Content script relays to service worker
-5. Service worker updates state and notifies panel
+5. Service worker updates state and notifies panel via port connection
+
+### Panel Connection
+
+The DevTools panel uses `chrome.runtime.connect()` for persistent communication:
+1. Panel sets up message listener BEFORE sending `PANEL_OPENED`
+2. Background responds with current state via `CALLS_UPDATE`
+3. This ordering prevents race conditions where panel misses initial data
+
+### Data Persistence
+
+- **Calls are preserved across page navigations** - not cleared on navigation or refresh
+- Users can manually clear calls using the Clear button in the panel
+- Call history is only cleared when the tab is closed
 
 ### Content Script Injection
 

@@ -85,13 +85,17 @@ webauthn-devtools/
 │   │   ├── index.html            # DevTools page (creates panel)
 │   │   ├── index.ts              # Panel initialization
 │   │   └── panel/
+│   │       ├── index.html        # Panel HTML entry
+│   │       ├── index.tsx         # React entry
+│   │       ├── index.css         # Styles
 │   │       ├── App.tsx           # Main panel component
 │   │       ├── components/
-│   │       │   ├── CallList.tsx
-│   │       │   ├── CallDetail.tsx
-│   │       │   ├── FlagsDisplay.tsx
-│   │       │   ├── Toolbar.tsx
-│   │       │   └── FilterBar.tsx
+│   │       │   ├── CallList.tsx      # List of captured calls
+│   │       │   ├── CallDetail.tsx    # Request/Response detail view
+│   │       │   ├── FlagsDisplay.tsx  # Vertical flags display
+│   │       │   ├── JsonView.tsx      # Collapsible JSON tree
+│   │       │   ├── Toolbar.tsx       # Header toolbar
+│   │       │   └── FilterBar.tsx     # Search and filter
 │   │       ├── hooks/
 │   │       │   ├── useWebAuthnCalls.ts
 │   │       │   └── useVirtualAuthStatus.ts
@@ -683,6 +687,29 @@ class StateManager {
 export const stateManager = new StateManager();
 ```
 
+**Data Persistence:**
+- Calls are preserved across page navigations (not cleared on navigation or refresh)
+- State is only cleared when:
+  - User clicks the Clear button in the panel
+  - The tab is closed
+- This allows developers to track WebAuthn calls across multiple pages in a flow
+
+**Panel Connection (Race Condition Prevention):**
+```typescript
+// src/devtools/panel/hooks/useWebAuthnCalls.ts
+useEffect(() => {
+  const port = chrome.runtime.connect({ name: 'webauthn-devtools-panel' });
+
+  // CRITICAL: Set up listener BEFORE sending PANEL_OPENED
+  port.onMessage.addListener(handleMessage);
+
+  // Now notify background - it will respond with current state
+  port.postMessage({ type: 'PANEL_OPENED', tabId });
+
+  return () => { port.disconnect(); };
+}, []);
+```
+
 ### 5. CDP Integration for Virtual Authenticator
 
 ```typescript
@@ -815,39 +842,77 @@ export function App() {
 // src/devtools/panel/components/FlagsDisplay.tsx
 
 import type { AuthDataFlags } from '../../../shared/types';
+import { formatFlagName } from '../utils/formatters';
 
 interface FlagsDisplayProps {
   flags: AuthDataFlags;
 }
 
-const FLAG_INFO = [
-  { key: 'UP', label: 'User Present' },
-  { key: 'UV', label: 'User Verified' },
-  { key: 'BE', label: 'Backup Eligible' },
-  { key: 'BS', label: 'Backed Up' },
-  { key: 'AT', label: 'Credential Data' },
-  { key: 'ED', label: 'Extensions' },
-] as const;
+const FLAG_ORDER: (keyof Omit<AuthDataFlags, 'raw'>)[] = [
+  'UP', 'UV', 'BE', 'BS', 'AT', 'ED',
+];
 
 export function FlagsDisplay({ flags }: FlagsDisplayProps) {
   return (
-    <div className="flags-display">
-      <div className="flags-header">
-        Flags <span className="flags-raw">0x{flags.raw.toString(16).padStart(2, '0')}</span>
-      </div>
-      <div className="flags-grid">
-        {FLAG_INFO.map(({ key, label }) => (
-          <div key={key} className={`flag-item ${flags[key] ? 'set' : 'unset'}`}>
-            <span className="flag-icon">{flags[key] ? '✓' : '✗'}</span>
-            <span className="flag-code">{key}</span>
-            <span className="flag-label">{label}</span>
-          </div>
-        ))}
-      </div>
+    <div className="flags-display vertical">
+      {FLAG_ORDER.map((flag) => (
+        <div key={flag} className={`flag-item ${flags[flag] ? 'true' : 'false'}`}>
+          <span className="flag-icon">
+            {flags[flag] ? '\u2713' : '\u25CB'}
+          </span>
+          <span className="flag-label">{flag}</span>
+          <span className="flag-name">({formatFlagName(flag)})</span>
+        </div>
+      ))}
     </div>
   );
 }
 ```
+
+**FlagsDisplay features:**
+- Vertical layout with icons (✓ for true, ○ for false)
+- True flags highlighted in green, false flags dimmed
+- Each flag shows abbreviation and full name
+
+### CallDetail Component Structure
+
+The CallDetail component uses two tabs (Request and Response) with parsed data displayed inline:
+
+```tsx
+// src/devtools/panel/components/CallDetail.tsx
+
+// Main component with Request/Response tabs (no Parsed tab)
+export function CallDetail({ call }: CallDetailProps) {
+  const [activeTab, setActiveTab] = useState<'request' | 'response'>('request');
+  // ...
+}
+
+// Response view with inline parsed data
+function CreateResponseView({ response }: { response: CreateResponse }) {
+  // Parses clientDataJSON and attestationObject
+  // Displays raw fields with inline ParsedBlock components
+}
+
+function GetResponseView({ response }: { response: GetResponse }) {
+  // Parses clientDataJSON and authenticatorData
+  // Displays raw fields with inline ParsedBlock components
+}
+
+// Helper components
+function JsonProperty({ name, value, isObject }: JsonPropertyProps) {
+  // Renders a single JSON property
+}
+
+function ParsedBlock({ title, children }: ParsedBlockProps) {
+  // Renders a collapsible parsed data block
+}
+```
+
+**CallDetail features:**
+- Two tabs only: Request and Response
+- Parsed clientData shown inline after clientDataJSON field
+- Parsed attestation/authData shown inline after attestationObject/authenticatorData field
+- Flags displayed vertically within parsed authData section
 
 ## Manifest Configuration
 

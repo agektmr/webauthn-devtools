@@ -1,0 +1,213 @@
+/**
+ * Copyright 2025 Eiji Kitamura
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * WebAuthn test vectors for parser testing.
+ * These are real-world examples of WebAuthn data structures.
+ */
+
+/**
+ * Sample clientDataJSON for a create (registration) ceremony.
+ * Decoded: {"type":"webauthn.create","challenge":"dGVzdC1jaGFsbGVuZ2U","origin":"https://example.com","crossOrigin":false}
+ */
+export const SAMPLE_CLIENT_DATA_JSON_CREATE =
+  'eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiZEdWemRDMWphR0ZzYkdWdVoyVSIsIm9yaWdpbiI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJjcm9zc09yaWdpbiI6ZmFsc2V9';
+
+/**
+ * Sample clientDataJSON for a get (authentication) ceremony.
+ * Decoded: {"type":"webauthn.get","challenge":"YXV0aC1jaGFsbGVuZ2U","origin":"https://example.com","crossOrigin":false}
+ */
+export const SAMPLE_CLIENT_DATA_JSON_GET =
+  'eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiWVhWMGFDMWphR0ZzYkdWdVoyVSIsIm9yaWdpbiI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJjcm9zc09yaWdpbiI6ZmFsc2V9';
+
+/**
+ * Sample authData with flags:
+ * - UP (User Present): true
+ * - UV (User Verified): true
+ * - BE (Backup Eligible): true
+ * - BS (Backup State): true
+ * - AT (Attested Credential Data): false
+ * - ED (Extension Data): false
+ *
+ * Structure:
+ * - rpIdHash: 32 bytes (SHA-256 of "example.com")
+ * - flags: 1 byte (0x1D = UP + UV + BE + BS)
+ * - signCount: 4 bytes (0x00000001)
+ *
+ * Total: 37 bytes
+ */
+export const SAMPLE_AUTH_DATA_MINIMAL = new Uint8Array([
+  // rpIdHash (32 bytes) - SHA-256 of "example.com"
+  0xa3, 0x79, 0xa6, 0xf6, 0xee, 0xaf, 0xb9, 0xa5, 0x5e, 0x37, 0x8c, 0x11, 0x80,
+  0x34, 0xe2, 0x75, 0x1e, 0x68, 0x2f, 0xab, 0x9f, 0x2d, 0x30, 0xab, 0x13, 0xd2,
+  0x12, 0x55, 0x86, 0xce, 0x19, 0x47,
+  // flags (1 byte): UP=1, UV=1, BE=1, BS=1 = 0x1D
+  0x1d,
+  // signCount (4 bytes, big-endian): 1
+  0x00, 0x00, 0x00, 0x01,
+]);
+
+/**
+ * Sample authData with attested credential data.
+ * Flags: UP + UV + AT = 0x45
+ *
+ * Structure:
+ * - rpIdHash: 32 bytes
+ * - flags: 1 byte (0x45)
+ * - signCount: 4 bytes
+ * - aaguid: 16 bytes
+ * - credentialIdLength: 2 bytes (0x0020 = 32)
+ * - credentialId: 32 bytes
+ * - credentialPublicKey: COSE key (ES256)
+ */
+export const SAMPLE_AUTH_DATA_WITH_CREDENTIAL = new Uint8Array([
+  // rpIdHash (32 bytes)
+  0xa3, 0x79, 0xa6, 0xf6, 0xee, 0xaf, 0xb9, 0xa5, 0x5e, 0x37, 0x8c, 0x11, 0x80,
+  0x34, 0xe2, 0x75, 0x1e, 0x68, 0x2f, 0xab, 0x9f, 0x2d, 0x30, 0xab, 0x13, 0xd2,
+  0x12, 0x55, 0x86, 0xce, 0x19, 0x47,
+  // flags (1 byte): UP=1, UV=1, AT=1 = 0x45
+  0x45,
+  // signCount (4 bytes): 0
+  0x00, 0x00, 0x00, 0x00,
+  // aaguid (16 bytes) - example AAGUID
+  0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
+  0x0e, 0x0f, 0x10,
+  // credentialIdLength (2 bytes): 32
+  0x00, 0x20,
+  // credentialId (32 bytes)
+  0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d,
+  0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a,
+  0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30,
+  // COSE Key (ES256) - CBOR encoded
+  // {1: 2, 3: -7, -1: 1, -2: x-coordinate, -3: y-coordinate}
+  0xa5, // map(5)
+  0x01, 0x02, // kty: 2 (EC2)
+  0x03, 0x26, // alg: -7 (ES256)
+  0x20, 0x01, // crv: 1 (P-256)
+  0x21, 0x58, 0x20, // x: bytes(32)
+  0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
+  0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a,
+  0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20,
+  0x22, 0x58, 0x20, // y: bytes(32)
+  0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d,
+  0x2e, 0x2f, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a,
+  0x3b, 0x3c, 0x3d, 0x3e, 0x3f, 0x40,
+]);
+
+/**
+ * Sample COSE key for ES256 (ECDSA with P-256)
+ * CBOR: {1: 2, 3: -7, -1: 1, -2: <x>, -3: <y>}
+ */
+export const SAMPLE_COSE_KEY_ES256 = new Uint8Array([
+  0xa5, // map(5)
+  0x01, 0x02, // kty: 2 (EC2)
+  0x03, 0x26, // alg: -7 (ES256)
+  0x20, 0x01, // crv: 1 (P-256)
+  0x21, 0x58, 0x20, // x: bytes(32)
+  0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23,
+  0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd,
+  0xef, 0x01, 0x23, 0x45, 0x67, 0x89,
+  0x22, 0x58, 0x20, // y: bytes(32)
+  0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0, 0x12, 0x34, 0x56, 0x78, 0x9a,
+  0xbc, 0xde, 0xf0, 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0, 0x12, 0x34,
+  0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0,
+]);
+
+/**
+ * Sample attestationObject (CBOR encoded).
+ * Contains: fmt, attStmt, authData
+ *
+ * This is a "none" attestation format with minimal authData.
+ */
+export const SAMPLE_ATTESTATION_OBJECT = new Uint8Array([
+  0xa3, // map(3)
+  // "fmt": "none"
+  0x63, 0x66, 0x6d, 0x74, // text(3) "fmt"
+  0x64, 0x6e, 0x6f, 0x6e, 0x65, // text(4) "none"
+  // "attStmt": {}
+  0x67, 0x61, 0x74, 0x74, 0x53, 0x74, 0x6d, 0x74, // text(7) "attStmt"
+  0xa0, // map(0)
+  // "authData": bytes(37)
+  0x68, 0x61, 0x75, 0x74, 0x68, 0x44, 0x61, 0x74, 0x61, // text(8) "authData"
+  0x58, 0x25, // bytes(37)
+  // authData content (same as SAMPLE_AUTH_DATA_MINIMAL)
+  0xa3, 0x79, 0xa6, 0xf6, 0xee, 0xaf, 0xb9, 0xa5, 0x5e, 0x37, 0x8c, 0x11, 0x80,
+  0x34, 0xe2, 0x75, 0x1e, 0x68, 0x2f, 0xab, 0x9f, 0x2d, 0x30, 0xab, 0x13, 0xd2,
+  0x12, 0x55, 0x86, 0xce, 0x19, 0x47, 0x1d, 0x00, 0x00, 0x00, 0x01,
+]);
+
+/**
+ * Expected parsed values for the test vectors
+ */
+export const EXPECTED = {
+  rpIdHash:
+    'a379a6f6eeafb9a55e378c118034e2751e682fab9f2d30ab13d2125586ce1947',
+  flags: {
+    minimal: {
+      UP: true,
+      UV: true,
+      BE: true,
+      BS: true,
+      AT: false,
+      ED: false,
+      raw: 0x1d,
+    },
+    withCredential: {
+      UP: true,
+      UV: true,
+      BE: false,
+      BS: false,
+      AT: true,
+      ED: false,
+      raw: 0x45,
+    },
+  },
+  signCount: {
+    minimal: 1,
+    withCredential: 0,
+  },
+  aaguid: '01020304-0506-0708-090a-0b0c0d0e0f10',
+  credentialId:
+    'ERITFBUWFxgZGhscHR4fICEiIyQlJicoKSorLC0uLzA',
+  clientData: {
+    create: {
+      type: 'webauthn.create',
+      challenge: 'dGVzdC1jaGFsbGVuZ2U',
+      origin: 'https://example.com',
+      crossOrigin: false,
+    },
+    get: {
+      type: 'webauthn.get',
+      challenge: 'YXV0aC1jaGFsbGVuZ2U',
+      origin: 'https://example.com',
+      crossOrigin: false,
+    },
+  },
+  attestation: {
+    fmt: 'none',
+    attStmt: {},
+  },
+  coseKey: {
+    es256: {
+      kty: 2,
+      ktyName: 'EC2',
+      alg: -7,
+      algName: 'ES256',
+      crv: 1,
+      crvName: 'P-256',
+    },
+  },
+};

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WebAuthn Test Page</title>
+</head>
+<body>
+  <h1>WebAuthn Test Page</h1>
+  <button id="create">Test Create</button>
+  <button id="get">Test Get</button>
+  <pre id="output"></pre>
+
+  <script>
+    const output = document.getElementById('output');
+    function log(msg) {
+      output.textContent += msg + '\n';
+      console.log(msg);
+    }
+
+    document.getElementById('create').addEventListener('click', async () => {
+      log('Testing navigator.credentials.create()...');
+      try {
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(), 100);
+
+        await navigator.credentials.create({
+          publicKey: {
+            challenge: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]),
+            rp: { name: 'Test', id: location.hostname },
+            user: {
+              id: new Uint8Array([1, 2, 3, 4]),
+              name: 'test@test.com',
+              displayName: 'Test User'
+            },
+            pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+            timeout: 5000
+          },
+          signal: controller.signal
+        });
+        log('Success!');
+      } catch (e) {
+        log('Caught: ' + e.name + ': ' + e.message);
+      }
+    });
+
+    document.getElementById('get').addEventListener('click', async () => {
+      log('Testing navigator.credentials.get()...');
+      try {
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(), 100);
+
+        await navigator.credentials.get({
+          publicKey: {
+            challenge: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]),
+            rpId: location.hostname,
+            allowCredentials: [{
+              type: 'public-key',
+              id: new Uint8Array([5, 6, 7, 8, 9, 10, 11, 12])
+            }],
+            timeout: 5000
+          },
+          signal: controller.signal
+        });
+        log('Success!');
+      } catch (e) {
+        log('Caught: ' + e.name + ': ' + e.message);
+      }
+    });
+
+    log('Page loaded. Check console for "WebAuthn DevTools: Interceptors installed"');
+  </script>
+</body>
+</html>
