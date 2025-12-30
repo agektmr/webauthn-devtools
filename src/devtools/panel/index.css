@@ -663,9 +663,6 @@ body {
 }
 
 .aaguid-name {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
   padding: 2px var(--spacing-sm);
   background-color: var(--bg-tertiary);
   border-radius: var(--border-radius);
@@ -677,10 +674,4 @@ body {
 .aaguid-name.aaguid-unknown {
   color: var(--text-secondary);
   font-style: italic;
-}
-
-.aaguid-icon {
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
 }

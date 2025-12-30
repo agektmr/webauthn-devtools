@@ -368,16 +368,7 @@ function AAGUIDDisplay({ aaguid }: AAGUIDDisplayProps): React.ReactElement {
       <span className="json-key">aaguid:</span>
       <span className="json-value string">"{aaguid}"</span>
       {metadata && (
-        <span className="aaguid-name">
-          {metadata.icon_dark && (
-            <img
-              src={metadata.icon_dark}
-              alt={metadata.name}
-              className="aaguid-icon"
-            />
-          )}
-          {metadata.name}
-        </span>
+        <span className="aaguid-name">{metadata.name}</span>
       )}
       {isZero && !metadata && (
         <span className="aaguid-name aaguid-unknown">

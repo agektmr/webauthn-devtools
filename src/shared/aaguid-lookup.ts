@@ -22,8 +22,6 @@ import aaguidData from './aaguid.json';
 
 export interface AAGUIDMetadata {
   name: string;
-  icon_dark?: string;
-  icon_light?: string;
 }
 
 const aaguidMap = aaguidData as Record<string, AAGUIDMetadata>;
