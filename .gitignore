@@ -3,6 +3,7 @@ node_modules/
 
 # Build output
 dist/
+webauthn-devtools*.zip
 
 # IDE
 .idea/
@@ -28,3 +29,6 @@ npm-debug.log*
 # Environment
 .env
 .env.local
+
+# Coding Agent related
+.claude/

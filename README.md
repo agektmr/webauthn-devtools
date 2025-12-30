@@ -35,6 +35,7 @@ A browser DevTools extension that captures and displays WebAuthn API interaction
    ```bash
    npm run build
    ```
+   This creates the `dist/` folder and a `webauthn-devtools-v{version}.zip` file at the project root, ready for Chrome Web Store upload.
 
 4. Load in Chrome:
    - Open `chrome://extensions`

@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite build --watch",
-    "build": "tsc && vite build && vite build --config vite.config.injected.ts",
+    "build": "tsc && vite build && vite build --config vite.config.injected.ts && npm run build:zip",
+    "build:zip": "node scripts/build-zip.js",
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
