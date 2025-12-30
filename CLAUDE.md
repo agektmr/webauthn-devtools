@@ -31,25 +31,41 @@ DevTools Panel (React)
 - `src/devtools/panel/` - React UI components
 - `src/shared/` - Types, constants, message definitions
 - `src/parsers/` - CBOR, authData, attestationObject parsers
+- `src/manifests/` - Browser-specific manifest.json files
 
 ## Build Commands
 
 ```bash
-npm install     # Install dependencies
-npm run dev     # Watch mode build
-npm run build   # Production build
-npm run test    # Run unit tests
-npx playwright test  # Run e2e tests
+npm install            # Install dependencies
+npm run dev            # Watch mode build (Chrome)
+npm run build          # Production build (both browsers)
+npm run build:chrome   # Build Chrome only → dist/chrome/
+npm run build:firefox  # Build Firefox only → dist/firefox/
+npm run test           # Run unit tests
+npx playwright test    # Run e2e tests
 ```
+
+**Output:**
+- `dist/chrome/` - Chrome/Edge extension files
+- `dist/firefox/` - Firefox extension files
+- `webauthn-devtools-chrome-v{version}.zip` - Chrome Web Store upload
+- `webauthn-devtools-firefox-v{version}.zip` - Firefox Add-ons upload
 
 **Note:** Sourcemaps are enabled for all builds to aid debugging.
 
 ## Loading the Extension
 
-1. Run `npm run build`
+**Chrome/Edge:**
+1. Run `npm run build:chrome`
 2. Open Chrome → `chrome://extensions`
 3. Enable "Developer mode"
-4. Click "Load unpacked" → select `dist/` folder
+4. Click "Load unpacked" → select `dist/chrome/` folder
+
+**Firefox:**
+1. Run `npm run build:firefox`
+2. Open Firefox → `about:debugging#/runtime/this-firefox`
+3. Click "Load Temporary Add-on..."
+4. Select any file in `dist/firefox/` folder
 
 ## Code Style
 

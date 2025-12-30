@@ -23,6 +23,10 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
+// Get target browser from environment variable (default: chrome)
+const targetBrowser = process.env.TARGET_BROWSER || 'chrome';
+const outDir = `dist/${targetBrowser}`;
+
 export default defineConfig({
   build: {
     lib: {
@@ -31,7 +35,7 @@ export default defineConfig({
       formats: ['iife'],
       fileName: () => 'injected.js',
     },
-    outDir: 'dist',
+    outDir,
     emptyOutDir: false, // Don't clear dist, main build already populated it
     minify: true,
     sourcemap: true,

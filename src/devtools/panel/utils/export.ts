@@ -18,18 +18,103 @@
  * Export utilities for WebAuthn call data.
  */
 
-import type { WebAuthnCall, ExportData } from '../../../shared/types';
+import type {
+  WebAuthnCall,
+  ExportData,
+  CreateResponse,
+  GetResponse,
+} from '../../../shared/types';
+import {
+  parseClientData,
+  parseAttestationObject,
+  parseAuthData,
+} from '../../../parsers';
+import { base64UrlToArrayBuffer } from '../../../injected/serializer';
+
+/**
+ * Enriches a WebAuthn call with parsed data for export.
+ */
+function enrichCallWithParsedData(call: WebAuthnCall): WebAuthnCall {
+  if (call.status !== 'success' || !call.response) {
+    return call;
+  }
+
+  if (call.type === 'create') {
+    const response = call.response as CreateResponse;
+    try {
+      const clientData = response.response.clientDataJSON
+        ? parseClientData(response.response.clientDataJSON)
+        : undefined;
+
+      const attestation = response.response.attestationObject
+        ? parseAttestationObject(
+            base64UrlToArrayBuffer(response.response.attestationObject)
+          )
+        : undefined;
+
+      if (clientData || attestation) {
+        return {
+          ...call,
+          response: {
+            ...response,
+            parsed: {
+              clientData: clientData!,
+              attestation: attestation!,
+            },
+          },
+        };
+      }
+    } catch (error) {
+      console.error('Failed to parse create response for export:', error);
+    }
+  }
+
+  if (call.type === 'get') {
+    const response = call.response as GetResponse;
+    try {
+      const clientData = response.response.clientDataJSON
+        ? parseClientData(response.response.clientDataJSON)
+        : undefined;
+
+      const authData = response.response.authenticatorData
+        ? parseAuthData(
+            base64UrlToArrayBuffer(response.response.authenticatorData)
+          )
+        : undefined;
+
+      if (clientData || authData) {
+        return {
+          ...call,
+          response: {
+            ...response,
+            parsed: {
+              clientData: clientData!,
+              authData: authData!,
+            },
+          },
+        };
+      }
+    } catch (error) {
+      console.error('Failed to parse get response for export:', error);
+    }
+  }
+
+  return call;
+}
 
 /**
  * Creates an export data object from the current calls.
+ * Includes parsed clientDataJSON, authenticatorData, and attestedCredentialData.
  */
 export function createExportData(calls: WebAuthnCall[]): ExportData {
+  const enrichedCalls = calls.map(enrichCallWithParsedData);
+
   return {
     version: '1.0',
     exportedAt: new Date().toISOString(),
     origin: window.location.origin,
     userAgent: navigator.userAgent,
-    calls,
+    calls: enrichedCalls,
   };
 }
 

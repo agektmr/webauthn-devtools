@@ -13,7 +13,7 @@ A browser DevTools extension that captures and displays WebAuthn API interaction
   - COSE public keys with algorithm details
 - **Authenticator Flags**: Visual display of UP, UV, BE, BS, AT, ED flags
 - **Data Persistence**: Calls are preserved across page navigations
-- **Export**: Export captured calls as JSON for sharing or documentation
+- **Export**: Export captured calls as JSON with parsed `clientDataJSON`, `authenticatorData`, and `attestedCredentialData`
 - **Virtual Authenticator Detection**: Shows when Chrome's virtual authenticator environment is active
 
 ## Installation
@@ -35,13 +35,24 @@ A browser DevTools extension that captures and displays WebAuthn API interaction
    ```bash
    npm run build
    ```
-   This creates the `dist/` folder and a `webauthn-devtools-v{version}.zip` file at the project root, ready for Chrome Web Store upload.
+   This creates separate builds for each browser:
+   - `dist/chrome/` - Chrome/Edge extension
+   - `dist/firefox/` - Firefox extension
+   - `webauthn-devtools-chrome-v{version}.zip` - Chrome Web Store upload
+   - `webauthn-devtools-firefox-v{version}.zip` - Firefox Add-ons upload
 
-4. Load in Chrome:
+4. Load in browser:
+
+   **Chrome/Edge:**
    - Open `chrome://extensions`
    - Enable "Developer mode"
    - Click "Load unpacked"
-   - Select the `dist/` folder
+   - Select the `dist/chrome/` folder
+
+   **Firefox:**
+   - Open `about:debugging#/runtime/this-firefox`
+   - Click "Load Temporary Add-on..."
+   - Select any file in the `dist/firefox/` folder
 
 ## Usage
 
@@ -77,21 +88,24 @@ webauthn-devtools/
 │   ├── background/     # Service worker, state management
 │   ├── devtools/       # DevTools panel UI (React)
 │   ├── parsers/        # CBOR, authData, COSE key parsers
-│   └── shared/         # Types, constants, messages
+│   ├── shared/         # Types, constants, messages
+│   └── manifests/      # Browser-specific manifest.json files
 ├── tests/
 │   ├── unit/           # Vitest unit tests
 │   └── e2e/            # Playwright e2e tests
-└── public/             # Static assets (manifest, icons)
+└── public/             # Static assets (icons)
 ```
 
 ### Commands
 
 ```bash
-npm run dev       # Watch mode build
-npm run build     # Production build
-npm run test      # Run unit tests
-npm run test:run  # Run unit tests once
-npx playwright test  # Run e2e tests
+npm run dev            # Watch mode build (Chrome)
+npm run build          # Production build (both browsers)
+npm run build:chrome   # Build Chrome only
+npm run build:firefox  # Build Firefox only
+npm run test           # Run unit tests
+npm run test:run       # Run unit tests once
+npx playwright test    # Run e2e tests
 ```
 
 ### Architecture

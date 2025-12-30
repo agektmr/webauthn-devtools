@@ -15,8 +15,9 @@
  */
 
 /**
- * Script to create a ZIP file of the dist/ folder for Chrome Web Store publishing.
- * The ZIP file is placed at the project root as webauthn-devtools.zip
+ * Script to create a ZIP file of the dist/{browser} folder for store publishing.
+ * Usage: node scripts/build-zip.js [chrome|firefox]
+ * The ZIP file is placed at the project root as webauthn-devtools-{browser}-v{version}.zip
  */
 
 import { execSync } from 'child_process';
@@ -26,17 +27,26 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(__dirname, '..');
-const distDir = resolve(rootDir, 'dist');
+
+// Get browser from command line argument or environment variable
+const browser = process.argv[2] || process.env.TARGET_BROWSER || 'chrome';
+
+if (!['chrome', 'firefox'].includes(browser)) {
+  console.error('Error: Invalid browser. Use "chrome" or "firefox".');
+  process.exit(1);
+}
+
+const distDir = resolve(rootDir, 'dist', browser);
 
 // Read version from manifest.json
 const manifestPath = resolve(distDir, 'manifest.json');
-let zipFileName = 'webauthn-devtools.zip';
+let zipFileName = `webauthn-devtools-${browser}.zip`;
 
 if (existsSync(manifestPath)) {
   try {
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'));
     if (manifest.version) {
-      zipFileName = `webauthn-devtools-v${manifest.version}.zip`;
+      zipFileName = `webauthn-devtools-${browser}-v${manifest.version}.zip`;
     }
   } catch {
     // Use default name if manifest can't be parsed
@@ -53,7 +63,9 @@ if (existsSync(zipPath)) {
 
 // Check if dist directory exists
 if (!existsSync(distDir)) {
-  console.error('Error: dist/ directory does not exist. Run build first.');
+  console.error(
+    `Error: dist/${browser}/ directory does not exist. Run build first.`
+  );
   process.exit(1);
 }
 
@@ -62,7 +74,11 @@ try {
   // Use native zip command (works on macOS/Linux)
   execSync(`cd "${distDir}" && zip -r "${zipPath}" .`, { stdio: 'inherit' });
   console.log(`\nCreated ${zipFileName} at project root`);
-  console.log('Ready for Chrome Web Store upload!');
+  if (browser === 'chrome') {
+    console.log('Ready for Chrome Web Store upload!');
+  } else {
+    console.log('Ready for Firefox Add-ons upload!');
+  }
 } catch (error) {
   console.error('Error creating zip file:', error.message);
   console.error('Make sure the "zip" command is available on your system.');

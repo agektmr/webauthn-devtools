@@ -26,21 +26,28 @@ import {
   rmSync,
 } from 'fs';
 
+// Get target browser from environment variable (default: chrome)
+const targetBrowser = process.env.TARGET_BROWSER || 'chrome';
+const outDir = `dist/${targetBrowser}`;
+
 // Plugin to copy static assets and fix HTML paths after build
 function copyStaticAssets() {
   return {
     name: 'copy-static-assets',
     closeBundle() {
-
-      // Copy manifest.json
+      // Copy manifest.json (use browser-specific manifest)
+      const manifestSource =
+        targetBrowser === 'firefox'
+          ? 'src/manifests/manifest.firefox.json'
+          : 'src/manifests/manifest.chrome.json';
       copyFileSync(
-        resolve(__dirname, 'public/manifest.json'),
-        resolve(__dirname, 'dist/manifest.json')
+        resolve(__dirname, manifestSource),
+        resolve(__dirname, outDir, 'manifest.json')
       );
 
       // Copy icons
       const iconsDir = resolve(__dirname, 'public/icons');
-      const distIconsDir = resolve(__dirname, 'dist/icons');
+      const distIconsDir = resolve(__dirname, outDir, 'icons');
       mkdirSync(distIconsDir, { recursive: true });
 
       for (const file of readdirSync(iconsDir)) {
@@ -52,26 +59,26 @@ function copyStaticAssets() {
 
       // Move and fix devtools.html
       let devtoolsHtml = readFileSync(
-        resolve(__dirname, 'dist/src/devtools/index.html'),
+        resolve(__dirname, outDir, 'src/devtools/index.html'),
         'utf-8'
       );
       // Fix paths from ../../ to ./
       devtoolsHtml = devtoolsHtml.replace(/\.\.\/\.\.\//g, './');
-      writeFileSync(resolve(__dirname, 'dist/devtools.html'), devtoolsHtml);
+      writeFileSync(resolve(__dirname, outDir, 'devtools.html'), devtoolsHtml);
 
       // Move and fix panel.html
       let panelHtml = readFileSync(
-        resolve(__dirname, 'dist/src/devtools/panel/index.html'),
+        resolve(__dirname, outDir, 'src/devtools/panel/index.html'),
         'utf-8'
       );
       // Fix paths from ../../../ to ./
       panelHtml = panelHtml.replace(/\.\.\/\.\.\/\.\.\//g, './');
-      writeFileSync(resolve(__dirname, 'dist/panel.html'), panelHtml);
+      writeFileSync(resolve(__dirname, outDir, 'panel.html'), panelHtml);
 
       // Remove the src directory
-      rmSync(resolve(__dirname, 'dist/src'), { recursive: true });
+      rmSync(resolve(__dirname, outDir, 'src'), { recursive: true });
 
-      console.log('Copied and fixed static assets in dist/');
+      console.log(`Copied and fixed static assets in ${outDir}/`);
     },
   };
 }
@@ -100,7 +107,7 @@ export default defineConfig({
         assetFileNames: 'assets/[name]-[hash][extname]',
       },
     },
-    outDir: 'dist',
+    outDir,
     emptyOutDir: true,
     sourcemap: true,
   },

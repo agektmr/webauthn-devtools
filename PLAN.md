@@ -278,3 +278,10 @@ Already in package.json:
 - `@types/chrome` - Extension API types
 
 No additional dependencies needed.
+
+---
+
+## TODO
+
+- [ ] Make it working on Firefox and Safari
+- [ ] Explore incremental permission for different websites
