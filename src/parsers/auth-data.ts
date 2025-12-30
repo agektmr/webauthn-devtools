@@ -107,14 +107,17 @@ export function parseAuthData(buffer: ArrayBuffer): ParsedAuthData {
     offset += 2;
 
     // credentialId (credentialIdLength bytes)
-    const credentialIdBytes = bytes.slice(offset, offset + credentialIdLength);
-    const credentialId = arrayBufferToBase64Url(credentialIdBytes.buffer);
+    // Note: Uint8Array.slice().buffer still references the original ArrayBuffer
+    // Use ArrayBuffer.slice() to get a proper copy of just the credential ID bytes
+    const credentialIdBuffer = buffer.slice(offset, offset + credentialIdLength);
+    const credentialId = arrayBufferToBase64Url(credentialIdBuffer);
     offset += credentialIdLength;
 
     // credentialPublicKey (CBOR, variable length)
-    const remainingBytes = bytes.slice(offset);
-    const publicKey = parseCoseKey(remainingBytes.buffer);
-    const keyLength = getCoseKeyLength(remainingBytes.buffer);
+    // Create a proper buffer slice for the remaining bytes
+    const remainingBuffer = buffer.slice(offset);
+    const publicKey = parseCoseKey(remainingBuffer);
+    const keyLength = getCoseKeyLength(remainingBuffer);
     offset += keyLength;
 
     result.attestedCredentialData = {
