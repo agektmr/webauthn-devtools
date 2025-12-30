@@ -33,6 +33,7 @@ import {
   parseAuthData,
 } from '../../../parsers';
 import { base64UrlToArrayBuffer } from '../../../injected/serializer';
+import { lookupAAGUID, isZeroAAGUID } from '../../../shared/aaguid-lookup';
 
 interface CallDetailProps {
   call: WebAuthnCall | null;
@@ -206,7 +207,7 @@ function CreateResponseView({ response }: { response: CreateResponse }): React.R
                         <div className="json-property">
                           <span className="json-key">attestedCredentialData:</span>
                           <div className="json-nested">
-                            <JsonProperty name="aaguid" value={parsed.attestation.authData.attestedCredentialData.aaguid} />
+                            <AAGUIDDisplay aaguid={parsed.attestation.authData.attestedCredentialData.aaguid} />
                             <JsonProperty name="credentialId" value={parsed.attestation.authData.attestedCredentialData.credentialId} />
                             <JsonProperty name="publicKey" value={parsed.attestation.authData.attestedCredentialData.publicKey} isObject />
                           </div>
@@ -350,6 +351,39 @@ function ParsedBlock({ title, children }: ParsedBlockProps): React.ReactElement 
       <div className="parsed-block-content">
         {children}
       </div>
+    </div>
+  );
+}
+
+interface AAGUIDDisplayProps {
+  aaguid: string;
+}
+
+function AAGUIDDisplay({ aaguid }: AAGUIDDisplayProps): React.ReactElement {
+  const metadata = lookupAAGUID(aaguid);
+  const isZero = isZeroAAGUID(aaguid);
+
+  return (
+    <div className="json-property aaguid-display">
+      <span className="json-key">aaguid:</span>
+      <span className="json-value string">"{aaguid}"</span>
+      {metadata && (
+        <span className="aaguid-name">
+          {metadata.icon_dark && (
+            <img
+              src={metadata.icon_dark}
+              alt={metadata.name}
+              className="aaguid-icon"
+            />
+          )}
+          {metadata.name}
+        </span>
+      )}
+      {isZero && !metadata && (
+        <span className="aaguid-name aaguid-unknown">
+          (Unknown / Virtual Authenticator)
+        </span>
+      )}
     </div>
   );
 }

@@ -653,3 +653,34 @@ body {
   color: var(--text-secondary);
   font-size: var(--font-size-xs);
 }
+
+/* AAGUID display with authenticator name */
+.aaguid-display {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.aaguid-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 2px var(--spacing-sm);
+  background-color: var(--bg-tertiary);
+  border-radius: var(--border-radius);
+  color: var(--accent-green);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.aaguid-name.aaguid-unknown {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.aaguid-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
