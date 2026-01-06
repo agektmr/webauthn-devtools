@@ -56,11 +56,13 @@ A browser DevTools extension that captures and displays WebAuthn API interaction
 
 ## Usage
 
-1. Open Chrome DevTools (F12 or Cmd+Option+I)
-2. Navigate to the "WebAuthn" panel
-3. Visit a site that uses WebAuthn (e.g., [webauthn.io](https://webauthn.io))
+1. Visit a site that uses WebAuthn (e.g., [webauthn.io](https://webauthn.io))
+2. Open Chrome DevTools (F12 or Cmd+Option+I)
+3. Navigate to the "WebAuthn" panel
 4. Trigger a registration or authentication flow
 5. View the captured calls in the panel
+
+**Note:** The extension only starts monitoring when the DevTools panel is open. If you open DevTools after a WebAuthn call has already occurred, you'll need to reload the page to capture subsequent calls.
 
 ### Panel Layout
 
@@ -110,14 +112,20 @@ npx playwright test    # Run e2e tests
 
 ### Architecture
 
+The extension only activates monitoring when the DevTools panel is open:
+
 ```
-Web Page (Injected Script)
-    ↓ window.postMessage
-Content Script
-    ↓ chrome.runtime.sendMessage
-Service Worker (Background)
-    ↓ chrome.runtime.connect
-DevTools Panel (React)
+DevTools Panel opens → PANEL_OPENED → Service Worker
+                                           ↓ ACTIVATE_TAB
+                                      Content Script
+                                           ↓ injects
+                                      Web Page (Injected Script)
+                                           ↓ window.postMessage
+                                      Content Script
+                                           ↓ chrome.runtime.sendMessage
+                                      Service Worker
+                                           ↓ port.postMessage
+                                      DevTools Panel
 ```
 
 ## Browser Support

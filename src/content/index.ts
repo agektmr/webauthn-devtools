@@ -90,6 +90,26 @@ function handleWindowMessage(event: MessageEvent): void {
   sendToBackground(runtimePayload);
 }
 
-// Initialize
-injectScript();
+// Track injection state to avoid double-injection
+let injected = false;
+
+/**
+ * Listen for activation from background service worker.
+ */
+chrome.runtime.onMessage.addListener((message: { type: string }) => {
+  if (message.type === 'ACTIVATE_TAB' && !injected) {
+    injected = true;
+    injectScript();
+  }
+});
+
+// Notify background that content script is ready for activation
+chrome.runtime.sendMessage({
+  source: 'webauthn-devtools',
+  payload: { type: 'CONTENT_READY' },
+} as RuntimeMessage).catch(() => {
+  // Extension context may be invalidated if extension is reloaded
+});
+
+// Listen for WebAuthn events from injected script (will only receive if injected)
 window.addEventListener('message', handleWindowMessage);

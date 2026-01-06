@@ -70,6 +70,7 @@ export interface RuntimeMessage {
 
 export type RuntimePayload =
   // From content script
+  | { type: 'CONTENT_READY' }
   | { type: 'WEBAUTHN_CALL_START'; data: CallStartData }
   | { type: 'WEBAUTHN_CALL_SUCCESS'; data: CallSuccessData }
   | { type: 'WEBAUTHN_CALL_ERROR'; data: CallErrorData }
@@ -82,7 +83,9 @@ export type RuntimePayload =
   | { type: 'GET_VIRTUAL_AUTH_STATUS'; tabId: number }
   // From service worker to panel
   | { type: 'CALLS_UPDATE'; calls: WebAuthnCall[] }
-  | { type: 'VIRTUAL_AUTH_STATUS'; enabled: boolean; authenticators: VirtualAuthenticator[] };
+  | { type: 'VIRTUAL_AUTH_STATUS'; enabled: boolean; authenticators: VirtualAuthenticator[] }
+  // From service worker to content script
+  | { type: 'ACTIVATE_TAB' };
 
 /**
  * Type guard for InjectedMessage

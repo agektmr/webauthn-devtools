@@ -71,6 +71,10 @@ chrome.runtime.onConnect.addListener((port) => {
       // Send current state to the newly connected panel
       const calls = stateManager.getCalls(tabId);
       connectionManager.sendToPanel(tabId, { type: 'CALLS_UPDATE', calls });
+      // Activate content scripts in all frames
+      chrome.tabs.sendMessage(tabId, { type: 'ACTIVATE_TAB' }).catch(() => {
+        // Content script may not be ready yet
+      });
     }
   });
 });
@@ -133,6 +137,15 @@ function handleMessage(
 
     case 'PANEL_CLOSED':
       connectionManager.removeConnection(tabId);
+      break;
+
+    case 'CONTENT_READY':
+      // If panel is already open for this tab, activate the content script
+      if (connectionManager.hasConnection(tabId)) {
+        chrome.tabs.sendMessage(tabId, { type: 'ACTIVATE_TAB' }).catch(() => {
+          // Content script may not be ready yet
+        });
+      }
       break;
 
     default:

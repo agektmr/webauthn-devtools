@@ -8,8 +8,34 @@ This document describes the technical design for the WebAuthn DevTools Extension
 
 ### High-Level Architecture
 
+The extension only activates monitoring when the DevTools panel is open. This minimizes overhead on pages where debugging is not needed.
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
+│                          DevTools Panel                                  │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────────┐   │
+│  │  Call List        │  │  Detail View     │  │  Toolbar             │   │
+│  │  Component        │  │  Component       │  │  (Export/Clear/etc)  │   │
+│  └──────────────────┘  └──────────────────┘  └──────────────────────┘   │
+└─────────────────────────────────────┬───────────────────────────────────┘
+                                      │ PANEL_OPENED
+┌─────────────────────────────────────▼───────────────────────────────────┐
+│                        Service Worker (Background)                       │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────────┐   │
+│  │  Connection       │  │  State Store     │  │  CDP Client          │   │
+│  │  Manager          │  │  (per tab)       │  │  (Virtual Auth)      │   │
+│  └──────────────────┘  └──────────────────┘  └──────────────────────┘   │
+└─────────────────────────────────────┬───────────────────────────────────┘
+                                      │ ACTIVATE_TAB
+┌─────────────────────────────────────▼───────────────────────────────────┐
+│                          Content Script                                  │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  Waits for activation, then injects script                      │    │
+│  │  Message Relay: window ←→ chrome.runtime                        │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────┬───────────────────────────────────┘
+                                      │ Injects when activated
+┌─────────────────────────────────────▼───────────────────────────────────┐
 │                              Web Page                                    │
 │  ┌───────────────────────────────────────────────────────────────────┐  │
 │  │                     Injected Script                                │  │
@@ -23,41 +49,19 @@ This document describes the technical design for the WebAuthn DevTools Extension
 │  │                     window.postMessage()                           │  │
 │  └─────────────────────────────────┬─────────────────────────────────┘  │
 └─────────────────────────────────────┼───────────────────────────────────┘
-                                      │
-┌─────────────────────────────────────▼───────────────────────────────────┐
-│                          Content Script                                  │
-│  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │  Message Relay: window ←→ chrome.runtime                        │    │
-│  └─────────────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────┬───────────────────────────────────┘
-                                      │ chrome.runtime.sendMessage()
-                                      │
-┌─────────────────────────────────────▼───────────────────────────────────┐
-│                        Service Worker (Background)                       │
-│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────────┐   │
-│  │  Connection       │  │  State Store     │  │  CDP Client          │   │
-│  │  Manager          │  │  (per tab)       │  │  (Virtual Auth)      │   │
-│  └──────────────────┘  └──────────────────┘  └──────────────────────┘   │
-└─────────────────────────────────────┬───────────────────────────────────┘
-                                      │ chrome.runtime.connect()
-                                      │
-┌─────────────────────────────────────▼───────────────────────────────────┐
-│                          DevTools Panel                                  │
-│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────────┐   │
-│  │  Call List        │  │  Detail View     │  │  Toolbar             │   │
-│  │  Component        │  │  Component       │  │  (Export/Clear/etc)  │   │
-│  └──────────────────┘  └──────────────────┘  └──────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────────┘
+                                      ▲ WebAuthn events relayed back up
 ```
+
+**Note:** If DevTools is opened after WebAuthn calls have occurred, those calls will be missed. The user must reload the page to capture subsequent calls.
 
 ### Component Responsibilities
 
 | Component | Responsibility |
 |-----------|----------------|
 | Injected Script | Wrap WebAuthn APIs, capture calls, serialize data |
-| Content Script | Relay messages between page and extension |
-| Service Worker | Manage state per tab, route messages, CDP integration |
-| DevTools Panel | Render UI, handle user interactions |
+| Content Script | Wait for activation, inject script when activated, relay messages |
+| Service Worker | Manage state per tab, route messages, activate content scripts, CDP integration |
+| DevTools Panel | Render UI, handle user interactions, trigger activation on open |
 
 ## Project Structure
 
@@ -374,6 +378,7 @@ export interface RuntimeMessage {
 
 export type RuntimePayload =
   // From content script
+  | { type: 'CONTENT_READY' }  // Content script ready for activation
   | { type: 'WEBAUTHN_EVENT'; data: InjectedPayload['type'] extends infer T ? T : never }
   // From DevTools panel
   | { type: 'PANEL_OPENED'; tabId: number }
@@ -381,9 +386,11 @@ export type RuntimePayload =
   | { type: 'CLEAR_CALLS'; tabId: number }
   | { type: 'GET_CALLS'; tabId: number }
   | { type: 'GET_VIRTUAL_AUTH_STATUS'; tabId: number }
-  // From service worker
+  // From service worker to panel
   | { type: 'CALLS_UPDATE'; calls: WebAuthnCall[] }
-  | { type: 'VIRTUAL_AUTH_STATUS'; enabled: boolean; authenticators: VirtualAuthenticator[] };
+  | { type: 'VIRTUAL_AUTH_STATUS'; enabled: boolean; authenticators: VirtualAuthenticator[] }
+  // From service worker to content script
+  | { type: 'ACTIVATE_TAB' };  // Signal to inject interceptors
 
 // ============================================================================
 // Virtual Authenticator Types

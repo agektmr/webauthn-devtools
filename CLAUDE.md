@@ -14,14 +14,22 @@ This extension helps web developers debug WebAuthn/passkey implementations by:
 ## Architecture
 
 ```
+DevTools Panel opens
+    ↓ PANEL_OPENED
+Service Worker (Background)
+    ↓ ACTIVATE_TAB
+Content Script
+    ↓ injects script
 Web Page (Injected Script)
-    ↓ window.postMessage
+    ↓ window.postMessage (WebAuthn events)
 Content Script
     ↓ chrome.runtime.sendMessage
 Service Worker (Background)
     ↓ chrome.runtime.connect
 DevTools Panel (React)
 ```
+
+**Note:** The extension only activates monitoring when the DevTools panel is open. This minimizes overhead on pages where debugging is not needed.
 
 ## Key Files
 
@@ -151,17 +159,16 @@ The DevTools panel uses `chrome.runtime.connect()` for persistent communication:
 - Users can manually clear calls using the Clear button in the panel
 - Call history is only cleared when the tab is closed
 
-### Content Script Injection
+### Conditional Activation
 
-Must inject at `document_start` before page scripts run to wrap APIs:
-```json
-{
-  "content_scripts": [{
-    "run_at": "document_start",
-    "js": ["content.js"]
-  }]
-}
-```
+The extension only injects WebAuthn interceptors when the DevTools panel is open:
+
+1. Content script loads at `document_start` but does NOT inject interceptors automatically
+2. Content script sends `CONTENT_READY` to background
+3. If DevTools panel is open, background sends `ACTIVATE_TAB` to content script
+4. Content script then injects the interceptor script
+
+**Important:** If DevTools is opened after WebAuthn calls have occurred, those calls will be missed. The user must reload the page to capture subsequent calls.
 
 ## Testing
 
