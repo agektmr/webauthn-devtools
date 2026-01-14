@@ -675,3 +675,163 @@ body {
   color: var(--text-secondary);
   font-style: italic;
 }
+
+/* RP ID hash display with decoded hostname */
+.rpid-hash-display {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.rpid-decoded {
+  padding: 2px var(--spacing-sm);
+  background-color: var(--bg-tertiary);
+  border-radius: var(--border-radius);
+  color: var(--accent-blue);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+/* Info link for documentation */
+.info-link-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--spacing-xs);
+}
+
+.info-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-size: 10px;
+  color: var(--text-disabled);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.info-link:hover,
+.info-link:focus {
+  color: var(--accent-blue);
+  outline: none;
+}
+
+.info-link:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent-blue);
+}
+
+/* Info tooltip */
+.info-tooltip {
+  z-index: 10000;
+  width: 220px;
+  padding: var(--spacing-sm);
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  animation: tooltipFadeIn 150ms ease-out;
+  pointer-events: none;
+}
+
+/* Tooltip arrow */
+.info-tooltip::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+}
+
+.info-tooltip.below::before {
+  top: -12px;
+  border-bottom-color: var(--border-color);
+}
+
+.info-tooltip.below::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -10px;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-bottom-color: var(--bg-tertiary);
+}
+
+.info-tooltip.above::before {
+  bottom: -12px;
+  border-top-color: var(--border-color);
+}
+
+.info-tooltip.above::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--bg-tertiary);
+}
+
+.info-tooltip-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.info-tooltip-description {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: var(--spacing-sm);
+}
+
+.info-tooltip-link {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  color: var(--accent-blue);
+  font-weight: 500;
+}
+
+.info-tooltip-link-text {
+  text-decoration: underline;
+}
+
+.info-tooltip-external-icon {
+  font-size: 10px;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.info-tooltip.above {
+  animation-name: tooltipFadeInAbove;
+}
+
+@keyframes tooltipFadeInAbove {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+

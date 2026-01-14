@@ -55,9 +55,9 @@ export function formatCallType(type: string): string {
     case 'get':
       return 'credentials.get()';
     case 'isUserVerifyingPlatformAuthenticatorAvailable':
-      return 'isUVPAA()';
+      return 'isUserVerifyingPlatformAuthenticatorAvailable()';
     case 'isConditionalMediationAvailable':
-      return 'isCMA()';
+      return 'isConditionalMediationAvailable()';
     case 'getClientCapabilities':
       return 'getClientCapabilities()';
     case 'signalUnknownCredential':

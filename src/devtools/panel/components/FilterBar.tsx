@@ -60,9 +60,9 @@ export function FilterBar({
         <option value="create">create()</option>
         <option value="get">get()</option>
         <option value="isUserVerifyingPlatformAuthenticatorAvailable">
-          isUVPAA()
+          isUserVerifyingPlatformAuthenticatorAvailable()
         </option>
-        <option value="isConditionalMediationAvailable">isCMA()</option>
+        <option value="isConditionalMediationAvailable">isConditionalMediationAvailable()</option>
         <option value="getClientCapabilities">getClientCapabilities()</option>
       </select>
 

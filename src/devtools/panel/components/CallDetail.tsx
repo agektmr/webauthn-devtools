@@ -34,6 +34,7 @@ import {
 } from '../../../parsers';
 import { base64UrlToArrayBuffer } from '../../../injected/serializer';
 import { lookupAAGUID, isZeroAAGUID } from '../../../shared/aaguid-lookup';
+import { InfoLink } from './InfoLink';
 
 interface CallDetailProps {
   call: WebAuthnCall | null;
@@ -90,11 +91,39 @@ export function CallDetail({ call }: CallDetailProps): React.ReactElement {
 }
 
 function RequestView({ call }: { call: WebAuthnCall }): React.ReactElement {
+  // Extract mediation from request if present (it's at CredentialRequestOptions level, not in publicKey)
+  const request = call.request as unknown as Record<string, unknown>;
+  const mediation = request.mediation as string | undefined;
+
+  // Create a copy without mediation for displaying publicKey options
+  const publicKeyOptions = { ...request };
+  delete publicKeyOptions.mediation;
+
+  const hasPublicKeyOptions = Object.keys(publicKeyOptions).length > 0;
+
   return (
-    <div className="section">
-      <div className="section-title">Request Options</div>
-      <JsonView data={call.request} />
-    </div>
+    <>
+      {hasPublicKeyOptions && (
+        <div className="section">
+          <div className="section-title">
+            {call.type === 'create' ? 'PublicKeyCredentialCreationOptions' : 'PublicKeyCredentialRequestOptions'}
+          </div>
+          <JsonView data={publicKeyOptions} />
+        </div>
+      )}
+      {mediation && (
+        <div className="section">
+          <div className="section-title">CredentialRequestOptions</div>
+          <div className="response-tree">
+            <div className="json-property">
+              <span className="json-key">mediation:</span>
+              {mediation === 'conditional' && <InfoLink docKey="mediation:conditional" />}
+              <span className="json-value string">"{mediation}"</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -197,7 +226,7 @@ function CreateResponseView({ response }: { response: CreateResponse }): React.R
                   <div className="json-property">
                     <span className="json-key">authData:</span>
                     <div className="json-nested">
-                      <JsonProperty name="rpIdHash" value={parsed.attestation.authData.rpIdHash} />
+                      <RpIdHashDisplay rpIdHash={parsed.attestation.authData.rpIdHash} origin={parsed.clientData?.origin} />
                       <div className="json-property">
                         <span className="json-key">flags:</span>
                         <FlagsDisplay flags={parsed.attestation.authData.flags} />
@@ -285,7 +314,7 @@ function GetResponseView({ response }: { response: GetResponse }): React.ReactEl
             {parsed?.authData && (
               <ParsedBlock title="authData (parsed)">
                 <div className="parsed-content">
-                  <JsonProperty name="rpIdHash" value={parsed.authData.rpIdHash} />
+                  <RpIdHashDisplay rpIdHash={parsed.authData.rpIdHash} origin={parsed.clientData?.origin} />
                   <div className="json-property">
                     <span className="json-key">flags:</span>
                     <FlagsDisplay flags={parsed.authData.flags} />
@@ -366,6 +395,7 @@ function AAGUIDDisplay({ aaguid }: AAGUIDDisplayProps): React.ReactElement {
   return (
     <div className="json-property aaguid-display">
       <span className="json-key">aaguid:</span>
+      <InfoLink docKey="aaguid" />
       <span className="json-value string">"{aaguid}"</span>
       {metadata && (
         <span className="aaguid-name">{metadata.name}</span>
@@ -374,6 +404,71 @@ function AAGUIDDisplay({ aaguid }: AAGUIDDisplayProps): React.ReactElement {
         <span className="aaguid-name aaguid-unknown">
           (Unknown / Virtual Authenticator)
         </span>
+      )}
+    </div>
+  );
+}
+
+interface RpIdHashDisplayProps {
+  rpIdHash: string;
+  origin?: string;
+}
+
+/**
+ * Computes SHA-256 hash of a string and returns it as hex.
+ */
+async function computeRpIdHash(rpId: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(rpId);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = new Uint8Array(hashBuffer);
+  return Array.from(hashArray)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+/**
+ * Extracts the hostname (RP ID) from an origin URL.
+ */
+function extractRpIdFromOrigin(origin: string): string {
+  try {
+    const url = new URL(origin);
+    return url.hostname;
+  } catch {
+    return origin;
+  }
+}
+
+function RpIdHashDisplay({ rpIdHash, origin }: RpIdHashDisplayProps): React.ReactElement {
+  const [decodedRpId, setDecodedRpId] = useState<string | null>(null);
+  const [verified, setVerified] = useState<boolean>(false);
+
+  React.useEffect(() => {
+    if (!origin) {
+      setDecodedRpId(null);
+      setVerified(false);
+      return;
+    }
+
+    const rpId = extractRpIdFromOrigin(origin);
+    setDecodedRpId(rpId);
+
+    // Verify the hash matches
+    computeRpIdHash(rpId).then((computedHash) => {
+      setVerified(computedHash === rpIdHash);
+    });
+  }, [origin, rpIdHash]);
+
+  const displayHash = rpIdHash.length > 50
+    ? `"${rpIdHash.substring(0, 50)}..."`
+    : `"${rpIdHash}"`;
+
+  return (
+    <div className="json-property rpid-hash-display">
+      <span className="json-key">rpIdHash:</span>
+      <span className="json-value string">{displayHash}</span>
+      {decodedRpId && verified && (
+        <span className="rpid-decoded">({decodedRpId})</span>
       )}
     </div>
   );

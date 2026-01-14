@@ -19,6 +19,8 @@
  */
 
 import React, { useState } from 'react';
+import { InfoLink } from './InfoLink';
+import { hasDocLink } from '../utils/docLinks';
 
 interface JsonViewProps {
   data: unknown;
@@ -165,6 +167,7 @@ function JsonObject({
         {keys.map((key, index) => (
           <div key={key}>
             <span className="json-key">"{key}"</span>
+            {hasDocLink(key) && <InfoLink docKey={key} />}
             <span className="json-bracket">: </span>
             <JsonValue value={value[key]} initialExpanded={false} />
             {index < keys.length - 1 && ','}

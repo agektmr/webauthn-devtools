@@ -31,4 +31,4 @@ npm-debug.log*
 .env.local
 
 # Coding Agent related
-.claude/
+.claude/settings.local.json
