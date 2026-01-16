@@ -164,15 +164,25 @@ function JsonObject({
         {'{'}
       </span>
       <div style={{ paddingLeft: '16px' }}>
-        {keys.map((key, index) => (
-          <div key={key}>
-            <span className="json-key">"{key}"</span>
-            {hasDocLink(key) && <InfoLink docKey={key} />}
-            <span className="json-bracket">: </span>
-            <JsonValue value={value[key]} initialExpanded={false} />
-            {index < keys.length - 1 && ','}
-          </div>
-        ))}
+        {keys.map((key, index) => {
+          const val = value[key];
+          // For "method" field with string value, check if the value has a doc link
+          const isMethodWithDocLink =
+            key === 'method' &&
+            typeof val === 'string' &&
+            hasDocLink(val);
+
+          return (
+            <div key={key}>
+              <span className="json-key">"{key}"</span>
+              {hasDocLink(key) && <InfoLink docKey={key} />}
+              {isMethodWithDocLink && <InfoLink docKey={val as string} />}
+              <span className="json-bracket">: </span>
+              <JsonValue value={val} initialExpanded={false} />
+              {index < keys.length - 1 && ','}
+            </div>
+          );
+        })}
       </div>
       <span className="json-bracket">{'}'}</span>
     </span>
