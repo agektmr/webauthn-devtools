@@ -34,14 +34,14 @@ export const DOC_LINKS: Record<string, DocLink> = {
   // User Verification
   userVerification: {
     label: 'User Verification',
-    description: 'Understand UV requirements and how to configure them for your use case.',
+    description: 'Configure whether the authenticator must verify user identity via PIN, biometric, or other method.',
     url: 'https://web.dev/articles/webauthn-user-verification',
   },
 
   // Discoverable Credentials
   discoverableCredentials: {
     label: 'Discoverable Credentials',
-    description: 'Learn about passkeys and resident credentials stored on authenticators.',
+    description: 'Configure whether credentials stored on the authenticator can be discoverable without providing credential IDs.',
     url: 'https://web.dev/articles/webauthn-discoverable-credentials',
   },
 
@@ -53,7 +53,7 @@ export const DOC_LINKS: Record<string, DocLink> = {
 
   residentKey: {
     label: 'Discoverable Credentials',
-    description: 'Configure whether credentials should be stored on the authenticator.',
+    description: 'Configure whether credentials stored on the authenticator can be discoverable without providing credential IDs.',
     url: 'https://web.dev/articles/webauthn-discoverable-credentials',
   },
 
@@ -73,7 +73,7 @@ export const DOC_LINKS: Record<string, DocLink> = {
   // AAGUID
   aaguid: {
     label: 'AAGUID',
-    description: 'Authenticator identifier that helps identify the make and model.',
+    description: 'Authenticator identifier that helps identify the manufacturer and model of the authenticator.',
     url: 'https://web.dev/articles/webauthn-aaguid',
   },
 
@@ -86,28 +86,42 @@ export const DOC_LINKS: Record<string, DocLink> = {
 
   signalAllAcceptedCredentials: {
     label: 'Signal API',
-    description: 'Update the authenticator with the list of valid credentials.',
+    description: 'Notify the authenticator about the list of saved credentials.',
     url: 'https://developer.chrome.com/docs/identity/webauthn-signal-api',
   },
 
   signalCurrentUserDetails: {
     label: 'Signal API',
-    description: 'Update user information stored on the authenticator.',
+    description: 'Notify the authenticator about user information.',
     url: 'https://developer.chrome.com/docs/identity/webauthn-signal-api',
   },
 
   // getClientCapabilities
   getClientCapabilities: {
     label: 'getClientCapabilities',
-    description: 'Check what WebAuthn features are supported by the browser.',
+    description: 'Check what WebAuthn features are supported by the client.',
     url: 'https://web.dev/articles/webauthn-client-capabilities',
   },
 
-  // Conditional UI / Mediation
-  'mediation:conditional': {
+  // Conditional Get / UI / Mediation
+  'mediation:conditional:get': {
     label: 'Conditional UI',
     description: 'Enable passkey autofill suggestions in login forms.',
+    url: 'https://web.dev/articles/passkey-form-autofill',
+  },
+
+  // Conditional Create
+  'mediation:conditional:create': {
+    label: 'Conditional Create',
+    description: 'Create a passkey automatically and conditionally.',
     url: 'https://developer.chrome.com/docs/identity/webauthn-conditional-create',
+  },
+
+  // Client Hints
+  hints: {
+    label: 'Client Hints',
+    description: 'Request a specific credential manager or passkey selection experience.',
+    url: 'https://passkeys.dev/docs/advanced/client-hints/',
   },
 };
 

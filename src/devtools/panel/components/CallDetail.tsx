@@ -117,7 +117,9 @@ function RequestView({ call }: { call: WebAuthnCall }): React.ReactElement {
           <div className="response-tree">
             <div className="json-property">
               <span className="json-key">mediation:</span>
-              {mediation === 'conditional' && <InfoLink docKey="mediation:conditional" />}
+              {mediation === 'conditional' && (
+                <InfoLink docKey={`mediation:conditional:${call.type}`} />
+              )}
               <span className="json-value string">"{mediation}"</span>
             </div>
           </div>
