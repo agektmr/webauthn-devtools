@@ -1,6 +1,6 @@
 {
   "name": "webauthn-devtools",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Browser DevTools extension for capturing and inspecting WebAuthn API calls",
   "type": "module",
   "scripts": {
