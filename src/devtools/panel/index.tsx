@@ -18,6 +18,13 @@
  * DevTools panel React application entry point.
  */
 
+// Browser polyfill (inline) - Chrome uses `chrome`, Firefox/Safari use `browser`
+// @ts-expect-error - We're intentionally creating a global
+if (typeof globalThis.browser === 'undefined' && typeof globalThis.chrome !== 'undefined') {
+  // @ts-expect-error - Assigning chrome to browser for cross-browser compatibility
+  globalThis.browser = globalThis.chrome;
+}
+
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';

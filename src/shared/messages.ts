@@ -81,6 +81,7 @@ export type RuntimePayload =
   | { type: 'CLEAR_CALLS'; tabId: number }
   | { type: 'GET_CALLS'; tabId: number }
   | { type: 'GET_VIRTUAL_AUTH_STATUS'; tabId: number }
+  | { type: 'OPEN_URL'; url: string }
   // From service worker to panel
   | { type: 'CALLS_UPDATE'; calls: WebAuthnCall[] }
   | { type: 'VIRTUAL_AUTH_STATUS'; enabled: boolean; authenticators: VirtualAuthenticator[] }

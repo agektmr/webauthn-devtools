@@ -81,13 +81,21 @@ export function InfoLink({ docKey, docLink: overrideDocLink }: InfoLinkProps): R
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    window.open(link.url, '_blank', 'noopener,noreferrer');
+    // Send message to background to open the URL since browser.tabs
+    // is not available in DevTools panels
+    browser.runtime.sendMessage({
+      source: 'webauthn-devtools',
+      payload: { type: 'OPEN_URL', url: link.url },
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      window.open(link.url, '_blank', 'noopener,noreferrer');
+      browser.runtime.sendMessage({
+        source: 'webauthn-devtools',
+        payload: { type: 'OPEN_URL', url: link.url },
+      });
     }
   };
 

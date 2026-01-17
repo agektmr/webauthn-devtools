@@ -18,6 +18,13 @@
  * Background service worker for WebAuthn DevTools extension.
  */
 
+// Browser polyfill (inline) - Chrome uses `chrome`, Firefox/Safari use `browser`
+// @ts-expect-error - We're intentionally creating a global
+if (typeof globalThis.browser === 'undefined' && typeof globalThis.chrome !== 'undefined') {
+  // @ts-expect-error - Assigning chrome to browser for cross-browser compatibility
+  globalThis.browser = globalThis.chrome;
+}
+
 import { stateManager } from './state';
 import { connectionManager } from './connections';
 import { cdpClient } from './cdp';
@@ -27,7 +34,7 @@ import type { WebAuthnCall } from '../shared/types';
 /**
  * Handle messages from content scripts and DevTools panels.
  */
-chrome.runtime.onMessage.addListener(
+browser.runtime.onMessage.addListener(
   (
     message: RuntimeMessage,
     sender: chrome.runtime.MessageSender,
@@ -37,7 +44,14 @@ chrome.runtime.onMessage.addListener(
       return;
     }
 
+    // Handle OPEN_URL separately since it doesn't require a tabId
+    if (message.payload.type === 'OPEN_URL') {
+      browser.tabs.create({ url: message.payload.url });
+      return;
+    }
+
     const tabId = sender.tab?.id || message.tabId;
+
     if (!tabId) {
       return;
     }
@@ -50,7 +64,7 @@ chrome.runtime.onMessage.addListener(
 /**
  * Handle DevTools panel connections.
  */
-chrome.runtime.onConnect.addListener((port) => {
+browser.runtime.onConnect.addListener((port) => {
   if (port.name !== 'webauthn-devtools-panel') {
     return;
   }
@@ -68,13 +82,40 @@ chrome.runtime.onConnect.addListener((port) => {
     // Register the connection
     if (message.payload.type === 'PANEL_OPENED') {
       connectionManager.addConnection(tabId, port);
-      // Send current state to the newly connected panel
-      const calls = stateManager.getCalls(tabId);
-      connectionManager.sendToPanel(tabId, { type: 'CALLS_UPDATE', calls });
-      // Activate content scripts in all frames
-      chrome.tabs.sendMessage(tabId, { type: 'ACTIVATE_TAB' }).catch(() => {
-        // Content script may not be ready yet
-      });
+
+      // Safari workaround: tabId=-1 means we need to query the active tab
+      if (tabId === -1) {
+        // IMMEDIATELY send empty response before Safari kills the port
+        try {
+          port.postMessage({ source: 'webauthn-devtools', payload: { type: 'CALLS_UPDATE', calls: [] } });
+        } catch {
+          // Port may already be disconnected
+        }
+
+        // Then try to get real data (may or may not work due to Safari port issues)
+        browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+          const activeTab = tabs[0];
+          if (activeTab?.id) {
+            const calls = stateManager.getCalls(activeTab.id);
+            if (calls.length > 0) {
+              try {
+                port.postMessage({ source: 'webauthn-devtools', payload: { type: 'CALLS_UPDATE', calls } });
+              } catch {
+                connectionManager.sendToPanel(-1, { type: 'CALLS_UPDATE', calls });
+              }
+            }
+
+            // Activate content script
+            browser.tabs.sendMessage(activeTab.id, { type: 'ACTIVATE_TAB' }).catch(() => {});
+          }
+        });
+      } else {
+        // Normal Chrome mode - send calls for the specific tab
+        const calls = stateManager.getCalls(tabId);
+        connectionManager.sendToPanel(tabId, { type: 'CALLS_UPDATE', calls });
+
+        browser.tabs.sendMessage(tabId, { type: 'ACTIVATE_TAB' }).catch(() => {});
+      }
     }
   });
 });
@@ -82,7 +123,7 @@ chrome.runtime.onConnect.addListener((port) => {
 /**
  * Clean up when tabs are closed.
  */
-chrome.tabs.onRemoved.addListener((tabId) => {
+browser.tabs.onRemoved.addListener((tabId) => {
   stateManager.deleteTab(tabId);
   connectionManager.removeConnection(tabId);
   cdpClient.detach(tabId);
@@ -117,11 +158,35 @@ function handleMessage(
       break;
 
     case 'GET_CALLS':
-      sendResponse(stateManager.getCalls(tabId));
+      // Safari workaround: if tabId is -1, query the active tab
+      if (tabId === -1) {
+        browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+          const activeTab = tabs[0];
+          if (activeTab?.id) {
+            const calls = stateManager.getCalls(activeTab.id);
+            sendResponse({ calls });
+          } else {
+            sendResponse({ calls: [] });
+          }
+        });
+      } else {
+        const calls = stateManager.getCalls(tabId);
+        sendResponse({ calls });
+      }
       break;
 
     case 'CLEAR_CALLS':
-      stateManager.clearCalls(tabId);
+      // Safari workaround: if tabId is -1, query the active tab
+      if (tabId === -1) {
+        browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+          const activeTab = tabs[0];
+          if (activeTab?.id) {
+            stateManager.clearCalls(activeTab.id);
+          }
+        });
+      } else {
+        stateManager.clearCalls(tabId);
+      }
       break;
 
     case 'GET_VIRTUAL_AUTH_STATUS':
@@ -142,7 +207,7 @@ function handleMessage(
     case 'CONTENT_READY':
       // If panel is already open for this tab, activate the content script
       if (connectionManager.hasConnection(tabId)) {
-        chrome.tabs.sendMessage(tabId, { type: 'ACTIVATE_TAB' }).catch(() => {
+        browser.tabs.sendMessage(tabId, { type: 'ACTIVATE_TAB' }).catch(() => {
           // Content script may not be ready yet
         });
       }
@@ -237,6 +302,12 @@ function handleCallAbort(tabId: number, callId: string): void {
 function notifyPanel(tabId: number): void {
   const calls = stateManager.getCalls(tabId);
   connectionManager.sendToPanel(tabId, { type: 'CALLS_UPDATE', calls });
+
+  // Safari workaround: also send to any panels registered with tabId=-1
+  // since Safari doesn't provide real tabIds to devtools panels
+  if (tabId !== -1 && connectionManager.hasConnection(-1)) {
+    connectionManager.sendToPanel(-1, { type: 'CALLS_UPDATE', calls });
+  }
 }
 
 // Log that the service worker has started

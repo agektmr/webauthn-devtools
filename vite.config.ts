@@ -30,6 +30,10 @@ import {
 const targetBrowser = process.env.TARGET_BROWSER || 'chrome';
 const outDir = `dist/${targetBrowser}`;
 
+// Get minify option from environment variable (default: true)
+// Set MINIFY=false to disable minification (useful for store submissions requiring readable code)
+const shouldMinify = process.env.MINIFY !== 'false';
+
 // Plugin to copy static assets and fix HTML paths after build
 function copyStaticAssets() {
   return {
@@ -39,7 +43,9 @@ function copyStaticAssets() {
       const manifestSource =
         targetBrowser === 'firefox'
           ? 'src/manifests/manifest.firefox.json'
-          : 'src/manifests/manifest.chrome.json';
+          : targetBrowser === 'safari'
+            ? 'src/manifests/manifest.safari.json'
+            : 'src/manifests/manifest.chrome.json';
       copyFileSync(
         resolve(__dirname, manifestSource),
         resolve(__dirname, outDir, 'manifest.json')
@@ -110,5 +116,6 @@ export default defineConfig({
     outDir,
     emptyOutDir: true,
     sourcemap: true,
+    minify: shouldMinify,
   },
 });

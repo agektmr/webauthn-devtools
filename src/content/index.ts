@@ -18,10 +18,17 @@
  * Content script that bridges the injected script and the background service worker.
  *
  * Responsibilities:
- * - Inject the interceptor script into the page context
+ * - Inject the interceptor script into the page context (only when DevTools panel is open)
  * - Listen for WebAuthn call events from the injected script
  * - Relay messages to the background service worker
  */
+
+// Browser polyfill (inline) - Chrome uses `chrome`, Firefox/Safari use `browser`
+// @ts-expect-error - We're intentionally creating a global
+if (typeof globalThis.browser === 'undefined' && typeof globalThis.chrome !== 'undefined') {
+  // @ts-expect-error - Assigning chrome to browser for cross-browser compatibility
+  globalThis.browser = globalThis.chrome;
+}
 
 import { isInjectedMessage } from '../shared/messages';
 import type { InjectedPayload } from '../shared/messages';
@@ -33,7 +40,7 @@ import type { RuntimeMessage, RuntimePayload } from '../shared/messages';
  */
 function injectScript(): void {
   const script = document.createElement('script');
-  script.src = chrome.runtime.getURL('injected.js');
+  script.src = browser.runtime.getURL('injected.js');
   script.onload = () => {
     script.remove();
   };
@@ -65,7 +72,7 @@ function sendToBackground(payload: RuntimePayload): void {
     payload,
   };
 
-  chrome.runtime.sendMessage(message).catch(() => {
+  browser.runtime.sendMessage(message).catch(() => {
     // Extension context may be invalidated if extension is reloaded
     // Silently ignore these errors
   });
@@ -91,25 +98,55 @@ function handleWindowMessage(event: MessageEvent): void {
 }
 
 // Track injection state to avoid double-injection
-let injected = false;
+// Use globalThis to survive Safari content script reloads (let can't be redeclared)
+declare global {
+  // eslint-disable-next-line no-var
+  var __webauthnDevtoolsInjected: boolean | undefined;
+}
+
+/**
+ * Inject the script if not already injected.
+ */
+function activateIfNeeded(): void {
+  if (!globalThis.__webauthnDevtoolsInjected) {
+    globalThis.__webauthnDevtoolsInjected = true;
+    injectScript();
+  }
+}
+
+/**
+ * Detect Safari by checking if certain Safari-specific features exist.
+ * Safari's browser.tabs.sendMessage is unreliable, so we inject immediately for Safari.
+ */
+function isSafari(): boolean {
+  return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+}
+
+// Safari: Inject immediately because ACTIVATE_TAB messaging is unreliable
+// Chrome/Firefox: Wait for ACTIVATE_TAB from background (when DevTools panel opens)
+if (isSafari()) {
+  activateIfNeeded();
+}
 
 /**
  * Listen for activation from background service worker.
+ * The background sends ACTIVATE_TAB when the DevTools panel is opened.
+ * For Chrome/Firefox: User must reload the page after opening DevTools to start capturing.
+ * For Safari: Injects immediately (above) since messaging is unreliable.
  */
-chrome.runtime.onMessage.addListener((message: { type: string }) => {
-  if (message.type === 'ACTIVATE_TAB' && !injected) {
-    injected = true;
-    injectScript();
+browser.runtime.onMessage.addListener((message: { type: string }) => {
+  if (message.type === 'ACTIVATE_TAB') {
+    activateIfNeeded();
   }
 });
 
-// Notify background that content script is ready for activation
-chrome.runtime.sendMessage({
+// Notify background that content script is ready
+browser.runtime.sendMessage({
   source: 'webauthn-devtools',
   payload: { type: 'CONTENT_READY' },
 } as RuntimeMessage).catch(() => {
-  // Extension context may be invalidated if extension is reloaded
+  // Extension context may be invalidated
 });
 
-// Listen for WebAuthn events from injected script (will only receive if injected)
+// Listen for WebAuthn events from injected script
 window.addEventListener('message', handleWindowMessage);

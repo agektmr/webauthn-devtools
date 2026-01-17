@@ -27,6 +27,9 @@ import { resolve } from 'path';
 const targetBrowser = process.env.TARGET_BROWSER || 'chrome';
 const outDir = `dist/${targetBrowser}`;
 
+// Get minify option from environment variable (default: true)
+const shouldMinify = process.env.MINIFY !== 'false';
+
 export default defineConfig({
   build: {
     lib: {
@@ -37,7 +40,7 @@ export default defineConfig({
     },
     outDir,
     emptyOutDir: false, // Don't clear dist, main build already populated it
-    minify: true,
+    minify: shouldMinify,
     sourcemap: true,
     rollupOptions: {
       output: {

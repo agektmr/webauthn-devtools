@@ -18,7 +18,7 @@
  * Hook for managing WebAuthn call state in the DevTools panel.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { WebAuthnCall } from '../../../shared/types';
 import type { RuntimeMessage, RuntimePayload } from '../../../shared/messages';
 
@@ -35,15 +35,19 @@ interface UseWebAuthnCallsResult {
 export function useWebAuthnCalls(): UseWebAuthnCallsResult {
   const [calls, setCalls] = useState<WebAuthnCall[]>([]);
   const [selectedCallId, setSelectedCallId] = useState<string | null>(null);
+  const pollingIntervalRef = useRef<number | null>(null);
+  const isSafariRef = useRef(false);
 
   useEffect(() => {
-    const tabId = chrome.devtools.inspectedWindow.tabId;
+    const tabId = browser.devtools.inspectedWindow.tabId;
+
+    // Detect Safari by tabId === -1
+    isSafariRef.current = tabId === -1;
 
     // Create a persistent connection to the background
-    const port = chrome.runtime.connect({ name: 'webauthn-devtools-panel' });
+    const port = browser.runtime.connect({ name: 'webauthn-devtools-panel' });
 
-    // Set up message listener FIRST (before sending PANEL_OPENED)
-    // This ensures we're ready to receive the CALLS_UPDATE response
+    // Set up message listener
     const handleMessage = (message: RuntimeMessage) => {
       if (message.source !== 'webauthn-devtools') {
         return;
@@ -57,24 +61,59 @@ export function useWebAuthnCalls(): UseWebAuthnCallsResult {
 
     port.onMessage.addListener(handleMessage);
 
-    // Now notify background that panel is opened
-    // Background will respond with CALLS_UPDATE
+    // Safari polling fallback - Safari's ports disconnect immediately
+    // so we poll for updates using runtime.sendMessage instead
+    const startPolling = () => {
+      if (pollingIntervalRef.current) return;
+
+      pollingIntervalRef.current = window.setInterval(() => {
+        browser.runtime.sendMessage({
+          source: 'webauthn-devtools',
+          tabId,
+          payload: { type: 'GET_CALLS', tabId },
+        } as RuntimeMessage).then((response: { calls?: WebAuthnCall[] } | undefined) => {
+          if (response?.calls) {
+            setCalls(response.calls);
+          }
+        }).catch(() => {
+          // Ignore errors during polling
+        });
+      }, 500); // Poll every 500ms
+    };
+
+    // Handle port disconnect - start polling if Safari
+    port.onDisconnect.addListener(() => {
+      if (isSafariRef.current) {
+        startPolling();
+      }
+    });
+
+    // Send PANEL_OPENED
     const openMessage: RuntimeMessage = {
       source: 'webauthn-devtools',
       tabId,
       payload: { type: 'PANEL_OPENED', tabId },
     };
-    port.postMessage(openMessage);
+
+    try {
+      port.postMessage(openMessage);
+    } catch {
+      if (isSafariRef.current) {
+        startPolling();
+      }
+    }
 
     // Cleanup
     return () => {
-      const closeMessage: RuntimeMessage = {
-        source: 'webauthn-devtools',
-        tabId,
-        payload: { type: 'PANEL_CLOSED', tabId },
-      };
-      port.postMessage(closeMessage);
-      port.disconnect();
+      if (pollingIntervalRef.current) {
+        window.clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+      try {
+        port.disconnect();
+      } catch {
+        // Port may already be disconnected
+      }
     };
   }, []);
 
@@ -83,8 +122,8 @@ export function useWebAuthnCalls(): UseWebAuthnCallsResult {
   }, []);
 
   const clearCalls = useCallback(() => {
-    const tabId = chrome.devtools.inspectedWindow.tabId;
-    chrome.runtime.sendMessage({
+    const tabId = browser.devtools.inspectedWindow.tabId;
+    browser.runtime.sendMessage({
       source: 'webauthn-devtools',
       tabId,
       payload: { type: 'CLEAR_CALLS', tabId },

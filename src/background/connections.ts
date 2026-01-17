@@ -33,6 +33,8 @@ export class ConnectionManager {
     // Close existing connection if any
     const existing = this.connections.get(tabId);
     if (existing) {
+      // Remove from map FIRST to avoid race condition with onDisconnect
+      this.connections.delete(tabId);
       existing.disconnect();
     }
 
@@ -40,7 +42,10 @@ export class ConnectionManager {
 
     // Remove connection when port disconnects
     port.onDisconnect.addListener(() => {
-      this.connections.delete(tabId);
+      // Only delete if this is still the registered port (not a stale handler)
+      if (this.connections.get(tabId) === port) {
+        this.connections.delete(tabId);
+      }
     });
   }
 
@@ -57,8 +62,15 @@ export class ConnectionManager {
 
   /**
    * Sends a message to the panel for a specific tab.
+   * If tabId is -1 (Safari), broadcasts to all panels.
    */
   sendToPanel(tabId: number, payload: RuntimePayload): void {
+    // Safari workaround: if tabId is -1, broadcast to all panels
+    if (tabId === -1) {
+      this.broadcastToAll(payload);
+      return;
+    }
+
     const port = this.connections.get(tabId);
     if (port) {
       try {
@@ -71,9 +83,27 @@ export class ConnectionManager {
   }
 
   /**
+   * Broadcasts a message to all connected panels.
+   * Used for Safari where tabId is unavailable.
+   */
+  broadcastToAll(payload: RuntimePayload): void {
+    for (const [tabId, port] of this.connections) {
+      try {
+        port.postMessage({ source: 'webauthn-devtools', payload });
+      } catch {
+        this.connections.delete(tabId);
+      }
+    }
+  }
+
+  /**
    * Checks if a panel is connected for a tab.
+   * Returns true if tabId is -1 and there are any connections (Safari mode).
    */
   hasConnection(tabId: number): boolean {
+    if (tabId === -1) {
+      return this.connections.size > 0;
+    }
     return this.connections.has(tabId);
   }
 

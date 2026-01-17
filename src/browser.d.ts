@@ -15,21 +15,16 @@
  */
 
 /**
- * DevTools page script that creates the WebAuthn panel.
+ * Type declarations for the browser namespace.
+ * The browser namespace is the standard WebExtensions API namespace used by
+ * Firefox, Safari, and other browsers. Chrome also supports this namespace
+ * as an alias for the chrome namespace.
+ *
+ * This declaration makes the browser namespace available as a type-compatible
+ * alias for the chrome namespace at runtime.
+ *
+ * Note: For type annotations (e.g., parameter types), use the chrome namespace
+ * types directly (e.g., chrome.runtime.Port) since TypeScript can't merge
+ * const and namespace declarations.
  */
-
-// Browser polyfill (inline) - Chrome uses `chrome`, Firefox/Safari use `browser`
-// @ts-expect-error - We're intentionally creating a global
-if (typeof globalThis.browser === 'undefined' && typeof globalThis.chrome !== 'undefined') {
-  // @ts-expect-error - Assigning chrome to browser for cross-browser compatibility
-  globalThis.browser = globalThis.chrome;
-}
-
-browser.devtools.panels.create(
-  'WebAuthn',
-  'icons/icon16.png',
-  'panel.html',
-  () => {
-    console.log('WebAuthn DevTools panel created');
-  }
-);
+declare const browser: typeof chrome;

@@ -38,8 +38,10 @@ A browser DevTools extension that captures and displays WebAuthn API interaction
    This creates separate builds for each browser:
    - `dist/chrome/` - Chrome/Edge extension
    - `dist/firefox/` - Firefox extension
+   - `dist/safari/` - Safari extension (requires Xcode conversion)
    - `webauthn-devtools-chrome-v{version}.zip` - Chrome Web Store upload
    - `webauthn-devtools-firefox-v{version}.zip` - Firefox Add-ons upload
+   - `webauthn-devtools-safari-v{version}.zip` - Safari Xcode conversion input
 
 4. Load in browser:
 
@@ -53,6 +55,15 @@ A browser DevTools extension that captures and displays WebAuthn API interaction
    - Open `about:debugging#/runtime/this-firefox`
    - Click "Load Temporary Add-on..."
    - Select any file in the `dist/firefox/` folder
+
+   **Safari (requires macOS with Xcode 12+):**
+   - Build Safari extension: `npm run build:safari`
+   - Convert using Xcode:
+     ```bash
+     xcrun safari-web-extension-converter dist/safari --project-location ./safari-extension --app-name "WebAuthn DevTools"
+     ```
+   - Open the generated Xcode project and build/run the app (Cmd+R)
+   - Enable the extension in Safari → Settings → Extensions
 
 ## Usage
 
@@ -102,9 +113,10 @@ webauthn-devtools/
 
 ```bash
 npm run dev            # Watch mode build (Chrome)
-npm run build          # Production build (both browsers)
+npm run build          # Production build (all browsers)
 npm run build:chrome   # Build Chrome only
 npm run build:firefox  # Build Firefox only
+npm run build:safari   # Build Safari only
 npm run test           # Run unit tests
 npm run test:run       # Run unit tests once
 npx playwright test    # Run e2e tests

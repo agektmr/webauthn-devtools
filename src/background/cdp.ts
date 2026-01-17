@@ -27,12 +27,27 @@ export class CDPClient {
   private attachedTabs = new Set<number>();
 
   /**
+   * Checks if the debugger API is available (Chrome only).
+   */
+  private isDebuggerAvailable(): boolean {
+    return (
+      typeof browser !== 'undefined' &&
+      typeof (browser as typeof chrome).debugger !== 'undefined'
+    );
+  }
+
+  /**
    * Checks if the virtual authenticator environment is enabled for a tab.
    */
   async checkVirtualAuthStatus(tabId: number): Promise<{
     enabled: boolean;
     authenticators: VirtualAuthenticator[];
   }> {
+    // Debugger API is only available in Chrome
+    if (!this.isDebuggerAvailable()) {
+      return { enabled: false, authenticators: [] };
+    }
+
     try {
       // Try to get authenticators - this will fail if WebAuthn domain is not enabled
       const debuggee: chrome.debugger.Debuggee = { tabId };
@@ -40,7 +55,7 @@ export class CDPClient {
       // Check if we're already attached
       if (!this.attachedTabs.has(tabId)) {
         try {
-          await chrome.debugger.attach(debuggee, '1.3');
+          await browser.debugger.attach(debuggee, '1.3');
           this.attachedTabs.add(tabId);
         } catch {
           // Already attached or can't attach
@@ -48,7 +63,7 @@ export class CDPClient {
         }
       }
 
-      const result = (await chrome.debugger.sendCommand(
+      const result = (await browser.debugger.sendCommand(
         debuggee,
         'WebAuthn.getAuthenticators'
       )) as { authenticators?: VirtualAuthenticator[] };
@@ -68,7 +83,7 @@ export class CDPClient {
   async detach(tabId: number): Promise<void> {
     if (this.attachedTabs.has(tabId)) {
       try {
-        await chrome.debugger.detach({ tabId });
+        await browser.debugger.detach({ tabId });
       } catch {
         // Already detached
       }
@@ -83,7 +98,7 @@ export class CDPClient {
     onCredentialAdded?: (tabId: number, authenticatorId: string) => void,
     onCredentialAsserted?: (tabId: number, authenticatorId: string) => void
   ): void {
-    chrome.debugger.onEvent.addListener((source, method, params) => {
+    browser.debugger.onEvent.addListener((source, method, params) => {
       if (!source.tabId) return;
 
       switch (method) {
@@ -103,7 +118,7 @@ export class CDPClient {
     });
 
     // Clean up when debugger detaches
-    chrome.debugger.onDetach.addListener((source) => {
+    browser.debugger.onDetach.addListener((source) => {
       if (source.tabId) {
         this.attachedTabs.delete(source.tabId);
       }

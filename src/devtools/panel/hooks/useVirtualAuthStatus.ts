@@ -39,10 +39,10 @@ export function useVirtualAuthStatus(): UseVirtualAuthStatusResult {
   const [loading, setLoading] = useState(true);
 
   const refresh = () => {
-    const tabId = chrome.devtools.inspectedWindow.tabId;
+    const tabId = browser.devtools.inspectedWindow.tabId;
     setLoading(true);
 
-    chrome.runtime.sendMessage(
+    browser.runtime.sendMessage(
       {
         source: 'webauthn-devtools',
         tabId,

@@ -31,8 +31,8 @@ const rootDir = resolve(__dirname, '..');
 // Get browser from command line argument or environment variable
 const browser = process.argv[2] || process.env.TARGET_BROWSER || 'chrome';
 
-if (!['chrome', 'firefox'].includes(browser)) {
-  console.error('Error: Invalid browser. Use "chrome" or "firefox".');
+if (!['chrome', 'firefox', 'safari'].includes(browser)) {
+  console.error('Error: Invalid browser. Use "chrome", "firefox", or "safari".');
   process.exit(1);
 }
 
@@ -76,8 +76,10 @@ try {
   console.log(`\nCreated ${zipFileName} at project root`);
   if (browser === 'chrome') {
     console.log('Ready for Chrome Web Store upload!');
-  } else {
+  } else if (browser === 'firefox') {
     console.log('Ready for Firefox Add-ons upload!');
+  } else {
+    console.log('Ready for Safari Web Extension conversion with Xcode!');
   }
 } catch (error) {
   console.error('Error creating zip file:', error.message);
