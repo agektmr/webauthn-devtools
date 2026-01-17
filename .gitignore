@@ -3,6 +3,7 @@ node_modules/
 
 # Build output
 dist/
+safari-extension/
 webauthn-devtools*.zip
 
 # IDE
