@@ -18,6 +18,8 @@ import { describe, it, expect } from 'vitest';
 import {
   arrayBufferToBase64Url,
   base64UrlToArrayBuffer,
+  serializeCreateRequest,
+  serializeGetRequest,
 } from '../../src/injected/serializer';
 
 describe('arrayBufferToBase64Url', () => {
@@ -153,5 +155,81 @@ describe('round-trip encoding/decoding', () => {
     const encoded = arrayBufferToBase64Url(original.buffer);
     const decoded = base64UrlToArrayBuffer(encoded);
     expect(new Uint8Array(decoded)).toEqual(original);
+  });
+});
+
+describe('serializeCreateRequest hints', () => {
+  function baseCreateOptions(): PublicKeyCredentialCreationOptions {
+    return {
+      rp: { id: 'example.com', name: 'Example' },
+      user: {
+        id: new Uint8Array([1, 2, 3]),
+        name: 'alice',
+        displayName: 'Alice',
+      },
+      challenge: new Uint8Array([4, 5, 6]),
+      pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+    };
+  }
+
+  it('should include hints when provided', () => {
+    const options = {
+      ...baseCreateOptions(),
+      hints: ['client-device', 'hybrid'],
+    } as PublicKeyCredentialCreationOptions & { hints: string[] };
+
+    const serialized = serializeCreateRequest(options);
+    expect(serialized.hints).toEqual(['client-device', 'hybrid']);
+  });
+
+  it('should set hints to undefined when not provided', () => {
+    const serialized = serializeCreateRequest(baseCreateOptions());
+    expect(serialized.hints).toBeUndefined();
+  });
+
+  it('should not mutate the original hints array', () => {
+    const hints = ['security-key'];
+    const options = {
+      ...baseCreateOptions(),
+      hints,
+    } as PublicKeyCredentialCreationOptions & { hints: string[] };
+
+    const serialized = serializeCreateRequest(options);
+    expect(serialized.hints).not.toBe(hints);
+    expect(serialized.hints).toEqual(hints);
+  });
+});
+
+describe('serializeGetRequest hints', () => {
+  function baseGetOptions(): PublicKeyCredentialRequestOptions {
+    return {
+      challenge: new Uint8Array([1, 2, 3]),
+    };
+  }
+
+  it('should include hints when provided', () => {
+    const options = {
+      ...baseGetOptions(),
+      hints: ['security-key'],
+    } as PublicKeyCredentialRequestOptions & { hints: string[] };
+
+    const serialized = serializeGetRequest(options);
+    expect(serialized.hints).toEqual(['security-key']);
+  });
+
+  it('should set hints to undefined when not provided', () => {
+    const serialized = serializeGetRequest(baseGetOptions());
+    expect(serialized.hints).toBeUndefined();
+  });
+
+  it('should pass through mediation alongside hints', () => {
+    const options = {
+      ...baseGetOptions(),
+      hints: ['client-device'],
+    } as PublicKeyCredentialRequestOptions & { hints: string[] };
+
+    const serialized = serializeGetRequest(options, 'conditional');
+    expect(serialized.hints).toEqual(['client-device']);
+    expect(serialized.mediation).toBe('conditional');
   });
 });
