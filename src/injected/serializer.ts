@@ -125,6 +125,13 @@ export function serializeCredentialDescriptors(
 export function serializeCreateRequest(
   options: PublicKeyCredentialCreationOptions
 ): Record<string, unknown> {
+  // `hints` is a newer WebAuthn field that may not be present in the installed
+  // TypeScript lib.dom.d.ts. Access it via a cast to avoid type errors while
+  // still capturing it when the page passes it.
+  const hints = (options as PublicKeyCredentialCreationOptions & {
+    hints?: string[];
+  }).hints;
+
   return {
     rp: {
       id: options.rp.id,
@@ -145,6 +152,7 @@ export function serializeCreateRequest(
       options.excludeCredentials
     ),
     authenticatorSelection: options.authenticatorSelection,
+    hints: Array.isArray(hints) ? [...hints] : undefined,
     attestation: options.attestation,
     extensions: options.extensions,
   };
@@ -157,12 +165,20 @@ export function serializeGetRequest(
   options: PublicKeyCredentialRequestOptions,
   mediation?: CredentialMediationRequirement
 ): Record<string, unknown> {
+  // `hints` is a newer WebAuthn field that may not be present in the installed
+  // TypeScript lib.dom.d.ts. Access it via a cast to avoid type errors while
+  // still capturing it when the page passes it.
+  const hints = (options as PublicKeyCredentialRequestOptions & {
+    hints?: string[];
+  }).hints;
+
   return {
     rpId: options.rpId,
     challenge: serializeBufferSource(options.challenge),
     timeout: options.timeout,
     allowCredentials: serializeCredentialDescriptors(options.allowCredentials),
     userVerification: options.userVerification,
+    hints: Array.isArray(hints) ? [...hints] : undefined,
     extensions: options.extensions,
     mediation,
   };

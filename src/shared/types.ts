@@ -67,6 +67,7 @@ export interface CreateRequest {
     userVerification?: 'required' | 'preferred' | 'discouraged';
   };
   attestation?: 'none' | 'indirect' | 'direct' | 'enterprise';
+  hints?: string[];
   extensions?: Record<string, unknown>;
 }
 
@@ -76,6 +77,7 @@ export interface GetRequest {
   timeout?: number;
   allowCredentials?: CredentialDescriptor[];
   userVerification?: 'required' | 'preferred' | 'discouraged';
+  hints?: string[];
   extensions?: Record<string, unknown>;
   mediation?: 'conditional' | 'optional' | 'required' | 'silent';
 }
