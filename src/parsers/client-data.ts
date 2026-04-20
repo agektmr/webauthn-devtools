@@ -38,6 +38,7 @@ export function parseClientData(base64url: string): ParsedClientData {
     type: string;
     challenge: string;
     origin: string;
+    topOrigin?: string;
     crossOrigin?: boolean;
     tokenBinding?: {
       status: string;
@@ -49,6 +50,7 @@ export function parseClientData(base64url: string): ParsedClientData {
     type: data.type as 'webauthn.create' | 'webauthn.get',
     challenge: data.challenge,
     origin: data.origin,
+    topOrigin: data.topOrigin,
     crossOrigin: data.crossOrigin,
     tokenBinding: data.tokenBinding,
   };

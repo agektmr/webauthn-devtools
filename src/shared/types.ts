@@ -137,6 +137,7 @@ export interface ParsedClientData {
   type: 'webauthn.create' | 'webauthn.get';
   challenge: string;
   origin: string;
+  topOrigin?: string;
   crossOrigin?: boolean;
   tokenBinding?: {
     status: string;
