@@ -26,30 +26,8 @@ import { base64UrlToArrayBuffer } from '../injected/serializer';
  * The input is a base64url-encoded JSON string.
  */
 export function parseClientData(base64url: string): ParsedClientData {
-  // Decode base64url to bytes
   const buffer = base64UrlToArrayBuffer(base64url);
   const bytes = new Uint8Array(buffer);
-
-  // Convert bytes to string
   const jsonString = new TextDecoder().decode(bytes);
-
-  // Parse JSON
-  const data = JSON.parse(jsonString) as {
-    type: string;
-    challenge: string;
-    origin: string;
-    crossOrigin?: boolean;
-    tokenBinding?: {
-      status: string;
-      id?: string;
-    };
-  };
-
-  return {
-    type: data.type as 'webauthn.create' | 'webauthn.get',
-    challenge: data.challenge,
-    origin: data.origin,
-    crossOrigin: data.crossOrigin,
-    tokenBinding: data.tokenBinding,
-  };
+  return JSON.parse(jsonString) as ParsedClientData;
 }

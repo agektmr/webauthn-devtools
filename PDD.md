@@ -272,14 +272,17 @@ export interface StaticMethodResponse {
 // ============================================================================
 
 export interface ParsedClientData {
-  type: 'webauthn.create' | 'webauthn.get';
-  challenge: string;      // base64url
-  origin: string;
+  type?: 'webauthn.create' | 'webauthn.get';
+  challenge?: string;     // base64url
+  origin?: string;
+  topOrigin?: string;
   crossOrigin?: boolean;
   tokenBinding?: {
     status: string;
     id?: string;
   };
+  // Unknown/extension fields from the JSON payload are preserved as-is.
+  [key: string]: unknown;
 }
 
 export interface ParsedAttestationObject {
