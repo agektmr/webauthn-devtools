@@ -43,8 +43,6 @@ describe('StateManager', () => {
     it('should return empty state for new tab', () => {
       const state = stateManager.getState(1);
       expect(state.calls).toEqual([]);
-      expect(state.virtualAuthEnabled).toBe(false);
-      expect(state.virtualAuthenticators).toEqual([]);
     });
 
     it('should return same state for same tab', () => {
@@ -156,24 +154,6 @@ describe('StateManager', () => {
     it('should return empty array for non-existent tab', () => {
       const calls = stateManager.getCalls(999);
       expect(calls).toEqual([]);
-    });
-  });
-
-  describe('setVirtualAuthStatus', () => {
-    it('should set virtual auth status', () => {
-      stateManager.setVirtualAuthStatus(1, true, [
-        {
-          authenticatorId: 'auth-1',
-          protocol: 'ctap2',
-          transport: 'internal',
-          hasResidentKey: true,
-          hasUserVerification: true,
-          isUserVerified: true,
-        },
-      ]);
-      const state = stateManager.getState(1);
-      expect(state.virtualAuthEnabled).toBe(true);
-      expect(state.virtualAuthenticators).toHaveLength(1);
     });
   });
 });

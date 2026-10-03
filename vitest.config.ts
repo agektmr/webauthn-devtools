@@ -18,12 +18,13 @@ import { defineConfig } from 'vitest/config';
 import { resolve } from 'path';
 
 export default defineConfig({
+  cacheDir: 'dist/.vite',
   test: {
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
     include: ['tests/unit/**/*.test.ts'],
-    exclude: ['tests/e2e/**'],
+    exclude: ['tests/e2e/**', '.worktree/**', 'node_modules/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

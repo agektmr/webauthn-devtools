@@ -29,6 +29,8 @@ const outDir = `dist/${targetBrowser}`;
 
 // Get minify option from environment variable (default: true)
 const shouldMinify = process.env.MINIFY !== 'false';
+const shouldSourcemap =
+  process.env.SOURCEMAP === 'true' || process.env.INJECT_KEY === 'true';
 
 export default defineConfig({
   build: {
@@ -41,7 +43,7 @@ export default defineConfig({
     outDir,
     emptyOutDir: false, // Don't clear dist, main build already populated it
     minify: shouldMinify,
-    sourcemap: true,
+    sourcemap: shouldSourcemap,
     rollupOptions: {
       output: {
         // Ensure all code is inlined, no external dependencies

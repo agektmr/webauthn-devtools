@@ -39,7 +39,6 @@ export interface WebAuthnCall {
   request: CreateRequest | GetRequest | StaticMethodRequest;
   response?: CreateResponse | GetResponse | StaticMethodResponse;
   error?: ErrorInfo;
-  virtualAuthenticatorId?: string;
 }
 
 export interface CreateRequest {
@@ -199,13 +198,4 @@ export interface ExportData {
   origin: string;
   userAgent: string;
   calls: WebAuthnCall[];
-}
-
-export interface VirtualAuthenticator {
-  authenticatorId: string;
-  protocol: 'ctap2' | 'u2f';
-  transport: 'usb' | 'nfc' | 'ble' | 'internal';
-  hasResidentKey: boolean;
-  hasUserVerification: boolean;
-  isUserVerified: boolean;
 }

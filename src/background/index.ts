@@ -27,7 +27,6 @@ if (typeof globalThis.browser === 'undefined' && typeof globalThis.chrome !== 'u
 
 import { stateManager } from './state';
 import { connectionManager } from './connections';
-import { cdpClient } from './cdp';
 import type { RuntimeMessage, RuntimePayload } from '../shared/messages';
 import type { WebAuthnCall } from '../shared/types';
 
@@ -126,7 +125,6 @@ browser.runtime.onConnect.addListener((port) => {
 browser.tabs.onRemoved.addListener((tabId) => {
   stateManager.deleteTab(tabId);
   connectionManager.removeConnection(tabId);
-  cdpClient.detach(tabId);
 });
 
 // Note: Calls are preserved across page navigations.
@@ -187,17 +185,6 @@ function handleMessage(
       } else {
         stateManager.clearCalls(tabId);
       }
-      break;
-
-    case 'GET_VIRTUAL_AUTH_STATUS':
-      cdpClient.checkVirtualAuthStatus(tabId).then((status) => {
-        sendResponse(status);
-        connectionManager.sendToPanel(tabId, {
-          type: 'VIRTUAL_AUTH_STATUS',
-          enabled: status.enabled,
-          authenticators: status.authenticators,
-        });
-      });
       break;
 
     case 'PANEL_CLOSED':
