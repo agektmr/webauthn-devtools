@@ -45,6 +45,13 @@ let zipFileName = `webauthn-devtools-${browser}.zip`;
 if (existsSync(manifestPath)) {
   try {
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'));
+    if (manifest.key) {
+      console.error(
+        `Error: dist/${browser}/manifest.json contains a "key" field (local developer key). ` +
+          `Rebuild with "npm run build:${browser}" without INJECT_KEY/EXTENSION_KEY before packaging for the store.`
+      );
+      process.exit(1);
+    }
     if (manifest.version) {
       zipFileName = `webauthn-devtools-${browser}-v${manifest.version}.zip`;
     }
@@ -71,8 +78,10 @@ if (!existsSync(distDir)) {
 
 // Create zip file
 try {
-  // Use native zip command (works on macOS/Linux)
-  execSync(`cd "${distDir}" && zip -r "${zipPath}" .`, { stdio: 'inherit' });
+  // Use native zip command (works on macOS/Linux) and exclude sourcemaps/OS metadata
+  execSync(`cd "${distDir}" && zip -r "${zipPath}" . -x "*.map" -x "*.DS_Store"`, {
+    stdio: 'inherit',
+  });
   console.log(`\nCreated ${zipFileName} at project root`);
   if (browser === 'chrome') {
     console.log('Ready for Chrome Web Store upload!');

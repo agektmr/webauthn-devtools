@@ -3,9 +3,6 @@
   "name": "WebAuthn DevTools",
   "version": "1.2.0",
   "description": "Capture and inspect WebAuthn API calls in DevTools",
-  "permissions": [
-    "debugger"
-  ],
   "background": {
     "service_worker": "background.js",
     "type": "module"

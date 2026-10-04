@@ -18,15 +18,13 @@
  * Per-tab state management for WebAuthn calls.
  */
 
-import type { WebAuthnCall, VirtualAuthenticator } from '../shared/types';
+import type { WebAuthnCall } from '../shared/types';
 
 /**
  * State for a single tab.
  */
 export interface TabState {
   calls: WebAuthnCall[];
-  virtualAuthEnabled: boolean;
-  virtualAuthenticators: VirtualAuthenticator[];
 }
 
 /**
@@ -48,8 +46,6 @@ export class StateManager {
     if (!this.state.has(tabId)) {
       this.state.set(tabId, {
         calls: [],
-        virtualAuthEnabled: false,
-        virtualAuthenticators: [],
       });
     }
     return this.state.get(tabId)!;
@@ -102,20 +98,6 @@ export class StateManager {
    */
   deleteTab(tabId: number): void {
     this.state.delete(tabId);
-  }
-
-  /**
-   * Sets the virtual authenticator status for a tab.
-   */
-  setVirtualAuthStatus(
-    tabId: number,
-    enabled: boolean,
-    authenticators: VirtualAuthenticator[]
-  ): void {
-    const state = this.getState(tabId);
-    state.virtualAuthEnabled = enabled;
-    state.virtualAuthenticators = authenticators;
-    this.notifyListeners(tabId, state);
   }
 
   /**

@@ -25,13 +25,11 @@ import { downloadExport } from '../utils/export';
 interface ToolbarProps {
   calls: WebAuthnCall[];
   onClear: () => void;
-  virtualAuthEnabled: boolean;
 }
 
 export function Toolbar({
   calls,
   onClear,
-  virtualAuthEnabled,
 }: ToolbarProps): React.ReactElement {
   const handleExport = () => {
     if (calls.length > 0) {
@@ -42,12 +40,6 @@ export function Toolbar({
   return (
     <div className="toolbar">
       <span className="toolbar-title">WebAuthn</span>
-
-      <div
-        className={`virtual-auth-indicator ${virtualAuthEnabled ? 'enabled' : 'disabled'}`}
-      >
-        {virtualAuthEnabled ? 'Virtual Auth' : 'No Virtual Auth'}
-      </div>
 
       <div className="toolbar-spacer" />
 

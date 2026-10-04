@@ -56,21 +56,6 @@ const mockDevtools = {
   },
 };
 
-// Mock chrome.debugger
-const mockDebugger = {
-  attach: vi.fn(),
-  detach: vi.fn(),
-  sendCommand: vi.fn(),
-  onEvent: {
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-  },
-  onDetach: {
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-  },
-};
-
 // Mock chrome.tabs
 const mockTabs = {
   onRemoved: {
@@ -87,7 +72,6 @@ const mockTabs = {
 const chromeMock = {
   runtime: mockRuntime,
   devtools: mockDevtools,
-  debugger: mockDebugger,
   tabs: mockTabs,
 };
 
@@ -95,7 +79,7 @@ const chromeMock = {
 globalThis.chrome = chromeMock;
 
 // Export mocks for test assertions
-export { mockRuntime, mockDevtools, mockDebugger, mockTabs };
+export { mockRuntime, mockDevtools, mockTabs };
 
 /**
  * Reset all mocks before each test

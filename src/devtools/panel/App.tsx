@@ -24,11 +24,9 @@ import { FilterBar, FilterType, FilterStatus } from './components/FilterBar';
 import { CallList } from './components/CallList';
 import { CallDetail } from './components/CallDetail';
 import { useWebAuthnCalls } from './hooks/useWebAuthnCalls';
-import { useVirtualAuthStatus } from './hooks/useVirtualAuthStatus';
 
 function App(): React.ReactElement {
   const { calls, selectedCall, selectCall, clearCalls } = useWebAuthnCalls();
-  const { enabled: virtualAuthEnabled } = useVirtualAuthStatus();
 
   const [searchText, setSearchText] = useState('');
   const [typeFilter, setTypeFilter] = useState<FilterType>('all');
@@ -70,7 +68,6 @@ function App(): React.ReactElement {
       <Toolbar
         calls={calls}
         onClear={clearCalls}
-        virtualAuthEnabled={virtualAuthEnabled}
       />
       <FilterBar
         searchText={searchText}

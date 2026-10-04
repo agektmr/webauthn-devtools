@@ -5,6 +5,11 @@ node_modules/
 dist/
 safari-extension/
 webauthn-devtools*.zip
+webauthn-devtools*.crx
+
+# Private keys & developer credentials (never commit)
+*.pem
+*.key
 
 # IDE
 .idea/

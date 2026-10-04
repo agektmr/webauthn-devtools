@@ -474,27 +474,6 @@ body {
   letter-spacing: 0.5px;
 }
 
-/* Virtual auth indicator */
-.virtual-auth-indicator {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--border-radius);
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-}
-
-.virtual-auth-indicator.enabled {
-  background-color: rgba(129, 201, 149, 0.2);
-  color: var(--status-success);
-}
-
-.virtual-auth-indicator.disabled {
-  background-color: rgba(154, 160, 166, 0.2);
-  color: var(--text-secondary);
-}
-
 /* Error display */
 .error-display {
   padding: var(--spacing-md);
